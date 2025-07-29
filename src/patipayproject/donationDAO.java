@@ -4,10 +4,15 @@ package patipayproject;
 
 import java.sql.*;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 
 public class donationDAO {
@@ -57,6 +62,28 @@ public class donationDAO {
         return donations;
  
     }
+    
+    public Optional<Map.Entry<Integer, Integer>> getTopDonorOfMonth() {
+    String sql = "SELECT user_id, COUNT(*) as total FROM Donation " +
+                 "WHERE strftime('%Y-%m', date) = strftime('%Y-%m', 'now') " +
+                 "GROUP BY user_id ORDER BY total DESC LIMIT 1";
+
+    try (Connection conn = DBconnection.connect();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        ResultSet rs = pstmt.executeQuery();
+
+        if (rs.next()) {
+            int userId = rs.getInt("user_id");
+            int total = rs.getInt("total");
+            return Optional.of(new AbstractMap.SimpleEntry<>(userId, total));
+        }
+    } catch (SQLException e) {
+        System.out.println("Winner bulunurken hata: " + e.getMessage());
+    }
+    return Optional.empty();
+}
+
     public List<Donation> getAllDonations() {
         List<Donation> donations = new ArrayList<>();
         try (Connection conn = DBconnection.connect();

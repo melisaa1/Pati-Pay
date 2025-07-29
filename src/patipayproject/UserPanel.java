@@ -3,6 +3,7 @@
 package patipayproject;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.time.LocalDate;
@@ -16,21 +17,18 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 
-public class UserPanel extends JFrame{
+public class UserPanel extends JFrame {
     
-
-   
     private JPanel donationListPanel;
     private int userId;
 
     public UserPanel(int userId) {
         this.userId = userId;
 
-        setTitle("🐾 PatiPay - Kullanıcı Paneli");
-        setSize(600, 500);
+        setTitle("🐾PatiPay - Kullanıcı Paneli🐾");
+        setSize(700, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
         setLocationRelativeTo(null);
@@ -58,6 +56,7 @@ public class UserPanel extends JFrame{
         String[] types = {"Mama", "Su", "Para"};
         JComboBox<String> typeComboBox = new JComboBox<>(types);
         JButton donateButton = new JButton("Bağış Yap");
+        donateButton.setBackground(new Color(255,153,51));
 
         donatePanel.add(selectLabel);
         donatePanel.add(typeComboBox);

@@ -27,7 +27,7 @@ public class UserService {
             }
 
         } catch (SQLException e) {
-            System.out.println("❌ Kullanıcı girişinde hata: " + e.getMessage());
+            System.out.println("❌ Kullanıcı bulunamadı: " + e.getMessage());
             return -1;
         }
     }

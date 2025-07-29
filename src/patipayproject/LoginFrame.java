@@ -16,11 +16,12 @@ public class LoginFrame extends JFrame{
     public LoginFrame() {
         setTitle("Patipay Giriş");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(300, 250);
+        setSize(300, 300);
         setLocationRelativeTo(null);
 
         // Layout ayarlayalım (GridBagLayout öneririm daha esnek)
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(new Color(230,240,255));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5,5,5,5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -65,12 +66,23 @@ public class LoginFrame extends JFrame{
         add(panel);
 
         // ActionListener ekleyelim:
-        userLoginButton.addActionListener(this::handleUserLogin);
-        adminLoginButton.addActionListener(this::handleAdminLogin);
-        registerButton.addActionListener(this::handleRegister);
+        userLoginButton.addActionListener(e -> handleUserLogin(e));
+        userLoginButton.setBackground(new Color(100,149,237));
+        adminLoginButton.addActionListener(e -> handleAdminLogin(e));
+        adminLoginButton.setBackground(new Color(60,179,113));
+        registerButton.addActionListener(e -> handleRegister(e));
+        registerButton.setBackground(new Color(255,165,00));
+        
+       
 
         setVisible(true);
     }
+    
+     private void temizle(){
+         usernameField.setText("");
+         passwordField.setText("");
+
+}
 
    private void handleUserLogin(ActionEvent e) {
     String username = usernameField.getText();
