@@ -1,0 +1,24 @@
+# Java derleme dosyaları
+*.class
+
+# NetBeans özel dosyaları
+nbproject/private/
+build/
+dist/
+
+# JAR dosyaları
+*.jar
+
+# SQLite veritabanı dosyaları
+*.db
+patipay.db
+
+# MacOS sistem dosyası
+.DS_Store
+
+# Geçici dosyalar
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
