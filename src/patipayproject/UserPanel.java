@@ -2,120 +2,165 @@
  
 package patipayproject;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.FlowLayout;
-import java.awt.Font;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.time.LocalDate;
 import java.util.List;
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
 
 public class UserPanel extends JFrame {
-    
-    private JPanel donationListPanel;
-    private int userId;
+
+    private final int userId;
+
+    // Tablo bileşenleri
+    private JTable donationTable;
+    private DefaultTableModel donationModel;
+
+    // Alt bağış paneli bileşenleri
+    private JComboBox<String> typeCombo;
+    private JTextField amountField;
+    private JComboBox<String> unitCombo;
 
     public UserPanel(int userId) {
         this.userId = userId;
 
         setTitle("🐾PatiPay - Kullanıcı Paneli🐾");
-        setSize(700, 600);
+        setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
         setLocationRelativeTo(null);
 
-        // === ÜST ===
+        buildHeader();
+        buildCenterTable();   // <- JTable kur
+        buildFooterDonate();  // <- Bağış giriş paneli
+
+        // EKRANDA TABLOYU DOLDUR
+        refreshDonationTable();
+
+        setVisible(true);
+    }
+
+    private void buildHeader() {
         String username = UserService.getUsernameById(userId);
         JLabel welcomeLabel = new JLabel("Hoş geldin, " + username + " 👋", SwingConstants.CENTER);
         welcomeLabel.setFont(new Font("Arial", Font.BOLD, 20));
         welcomeLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         add(welcomeLabel, BorderLayout.NORTH);
+    }
 
-        // === ORTA ===
-        donationListPanel = new JPanel();
-        donationListPanel.setLayout(new BoxLayout(donationListPanel, BoxLayout.Y_AXIS));
-        refreshDonationList();
+    /** ORTA KISIM: JTable kurulum */
+    private void buildCenterTable() {
+        String[] cols = {"ID", "Tür", "Tarih", "Miktar", "Birim"};
+        donationModel = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        donationTable = new JTable(donationModel);
+        donationTable.setAutoCreateRowSorter(true); // sütun başlığına tıklayıp sıralama
 
-        JScrollPane scrollPane = new JScrollPane(donationListPanel);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("📋 Yaptığın Bağışlar"));
-        add(scrollPane, BorderLayout.CENTER);
+        JScrollPane scroll = new JScrollPane(donationTable);
+        scroll.setBorder(BorderFactory.createTitledBorder("📋 Yaptığın Bağışlar"));
+        add(scroll, BorderLayout.CENTER);
+    }
 
-        // === ALT: Bağış Yapma Paneli ===
-        JPanel donatePanel = new JPanel(new FlowLayout());
+    /** ALT KISIM: Bağış yapma paneli */
+    private void buildFooterDonate() {
+        JPanel donatePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        JLabel selectLabel = new JLabel("Bağış Türü Seç:");
+        JLabel selectLabel = new JLabel("Bağış Türü:");
         String[] types = {"Mama", "Su", "Para"};
-        JComboBox<String> typeComboBox = new JComboBox<>(types);
+        typeCombo = new JComboBox<>(types);
+
+        JLabel amountLabel = new JLabel("Miktar:");
+        amountField = new JTextField(8);
+
+        JLabel unitLabel = new JLabel("Birim:");
+        unitCombo = new JComboBox<>();
+
+        // Tür değişince birimleri güncelle
+        typeCombo.addActionListener(e -> populateUnitsByType());
+        typeCombo.setSelectedIndex(0); // ilk açılışta tetikler (mama → kg/paket)
+
         JButton donateButton = new JButton("Bağış Yap");
-        donateButton.setBackground(new Color(255,153,51));
+        donateButton.setBackground(new Color(255, 153, 51));
+        donateButton.addActionListener(e -> handleDonate());
 
         donatePanel.add(selectLabel);
-        donatePanel.add(typeComboBox);
+        donatePanel.add(typeCombo);
+        donatePanel.add(amountLabel);
+        donatePanel.add(amountField);
+        donatePanel.add(unitLabel);
+        donatePanel.add(unitCombo);
         donatePanel.add(donateButton);
 
-        // Bağış yap butonu işlevi
-        donateButton.addActionListener(e -> {
-            String selectedType = (String) typeComboBox.getSelectedItem();
-            String today = LocalDate.now().toString();
-
-            // Veritabanına bağış kaydet
-            boolean success = UserService.makeDonation(UserService.getUsernameById(userId), selectedType, today);
-
-            if (success) {
-                JOptionPane.showMessageDialog(this, "✅ Bağış kaydedildi!");
-                refreshDonationList();
-            } else {
-                JOptionPane.showMessageDialog(this, "❌ Bağış kaydedilemedi!");
-            }
-        });
-
         add(donatePanel, BorderLayout.SOUTH);
-
-        setVisible(true);
     }
 
-    // Bağış listesini yenile
-    private void refreshDonationList() {
-        donationListPanel.removeAll();
+    /** Tür → birim listesi */
+    private void populateUnitsByType() {
+        String t = ((String) typeCombo.getSelectedItem()).toLowerCase();
+        unitCombo.removeAllItems();
+        switch (t) {
+            case "mama":
+                unitCombo.addItem("kg");
+                unitCombo.addItem("paket");
+                break;
+            case "su":
+                unitCombo.addItem("L");
+                unitCombo.addItem("şişe");
+                break;
+            case "para":
+                unitCombo.addItem("TRY");
+                unitCombo.addItem("USD");
+                unitCombo.addItem("EUR");
+                break;
+        }
+        unitCombo.setSelectedIndex(0);
+    }
 
-        donationDAO donationDao = new donationDAO();
-        List<Donation> donations = donationDao.getDonationsByUserId(userId);
+    /** Bağış yap butonu davranışı */
+    private void handleDonate() {
+        String selectedType = (String) typeCombo.getSelectedItem();
+        LocalDate today = LocalDate.now();
 
-        if (donations.isEmpty()) {
-            JLabel noDonationLabel = new JLabel("Henüz bir bağış yapılmamış.");
-            noDonationLabel.setFont(new Font("Arial", Font.ITALIC, 14));
-            donationListPanel.add(noDonationLabel);
-        } else {
-            for (Donation d : donations) {
-                JLabel donationLabel = new JLabel(formatDonation(d));
-                donationLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-                donationLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-                donationListPanel.add(donationLabel);
-            }
+        double amount;
+        try {
+            amount = Double.parseDouble(amountField.getText().trim());
+            if (amount <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Lütfen 0'dan büyük geçerli bir miktar girin.");
+            return;
         }
 
-        donationListPanel.revalidate();
-        donationListPanel.repaint();
+        String unit = (String) unitCombo.getSelectedItem();
+        if (unit == null || unit.isBlank()) {
+            JOptionPane.showMessageDialog(this, "Lütfen birim seçin.");
+            return;
+        }
+
+        boolean success = UserService.makeDonation(userId, selectedType, today, amount, unit);
+        if (success) {
+            JOptionPane.showMessageDialog(this, "✅ Bağış kaydedildi!");
+            amountField.setText("");
+            refreshDonationTable(); // TABLOYU YENİLE
+        } else {
+            JOptionPane.showMessageDialog(this, "❌ Bağış kaydedilemedi!");
+        }
     }
 
-    // İkon ve bilgiyle bağış yazısı
-    private String formatDonation(Donation donation) {
-        String icon = switch (donation.getTypeName().toLowerCase()) {
-            case "mama" -> "🍖";
-            case "su" -> "💧";
-            case "para" -> "💰";
-            default -> "❓";
-        };
+    /** Tabloyu DB’den doldurur */
+    private void refreshDonationTable() {
+        donationModel.setRowCount(0);
+        donationDAO dao = new donationDAO();
+        List<Donation> donations = dao.getDonationsByUserId(userId);
 
-        return icon + " " + donation.getTypeName().toUpperCase() + " - 📅 " + donation.getDate();
+        for (Donation d : donations) {
+            donationModel.addRow(new Object[]{
+                    d.getId(),
+                    d.getTypeName().toUpperCase(),
+                    d.getDate().toString(),
+                    String.format("%.2f", d.getAmount()),
+                    d.getUnit()
+            });
+        }
     }
 }

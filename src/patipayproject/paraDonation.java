@@ -8,4 +8,10 @@ public class paraDonation implements DonationType {
        return "para";
     }
     
+    @Override
+    public String getDefaultUnit() { 
+        return "TRY";
+    
+    }
+    
 }

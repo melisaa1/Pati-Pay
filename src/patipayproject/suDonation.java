@@ -8,4 +8,11 @@ public class suDonation implements DonationType{
         return "su";
     }
     
-}
+
+    @Override
+    public String getDefaultUnit() { 
+        return "adet";
+    
+    }
+    }
+

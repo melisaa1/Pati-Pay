@@ -84,43 +84,71 @@ public class LoginFrame extends JFrame{
 
 }
 
-   private void handleUserLogin(ActionEvent e) {
-    String username = usernameField.getText();
+private void handleUserLogin(ActionEvent e) {
+    String username = usernameField.getText().trim();
     String password = new String(passwordField.getPassword());
+
+    // admin kullanıcı adıyla normal girişe izin verme:
+    if (isAdminUsername(username)) {
+        JOptionPane.showMessageDialog(this, "⚠️ Bu kullanıcı adı yönetici içindir. Lütfen 'Yönetici Girişi'ni kullanın.");
+        temizle();
+        return;
+    }
 
     int userId = UserService.login(username, password);
     if (userId != -1) {
         JOptionPane.showMessageDialog(this, "✅ Kullanıcı girişi başarılı!");
-        new UserPanel(userId);  // UserPanel kullanıcı ID'si ile açılır
+        new UserPanel(userId);
         dispose();
     } else {
         JOptionPane.showMessageDialog(this, "❌ Kullanıcı bilgileri hatalı!");
     }
+    temizle(); // her durumda temizle
 }
 
+private void handleAdminLogin(ActionEvent e) {
+    String username = usernameField.getText().trim();
+    String password = new String(passwordField.getPassword());
 
-    private void handleAdminLogin(ActionEvent e) {
-        String username = usernameField.getText();
-        String password = new String(passwordField.getPassword());
-
-        if (AdminService.login(username, password)) {
-            JOptionPane.showMessageDialog(this, "✅ Yönetici girişi başarılı!");
-            new AdminPanel();
-            dispose();
-        } else {
-            JOptionPane.showMessageDialog(this, "❌ Yönetici bilgileri hatalı!");
-        }
+    if (!isAdminUsername(username)) {
+        JOptionPane.showMessageDialog(this, "⚠️ Bu bölüm yalnızca yöneticiler içindir.");
+        temizle();
+        return;
     }
 
-  private void handleRegister(ActionEvent e) {
-    String username = usernameField.getText();
+    if (AdminService.login(username, password)) {
+        JOptionPane.showMessageDialog(this, "✅ Yönetici girişi başarılı!");
+        new AdminPanel();
+        dispose();
+    } else {
+        JOptionPane.showMessageDialog(this, "❌ Yönetici bilgileri hatalı!");
+    }
+    temizle();
+}
+
+private void handleRegister(ActionEvent e) {
+    String username = usernameField.getText().trim();
     String password = new String(passwordField.getPassword());
+
+    if (isAdminUsername(username)) {
+        JOptionPane.showMessageDialog(this, "⚠️ Bu yönetici kullanıcı adıdır. Yönetici kayıt olamaz; yalnızca 'Yönetici Girişi' yapılabilir.");
+        temizle();
+        return;
+    }
+    if (username.isEmpty() || password.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Lütfen kullanıcı adı ve şifre girin.");
+        return;
+    }
 
     if (UserService.register(username, password)) {
         JOptionPane.showMessageDialog(this, "✅ Kayıt başarılı!");
     } else {
         JOptionPane.showMessageDialog(this, "❌ Bu kullanıcı adı zaten var.");
     }
+    temizle();
+}
 
+private boolean isAdminUsername(String username) {
+    return "admin".equalsIgnoreCase(username);
 }
 }

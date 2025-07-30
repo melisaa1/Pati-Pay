@@ -9,23 +9,27 @@ public class Donation {
     private int userId; // Kullanıcı ID'si
     private DonationType type;
     private LocalDate date;
+    private double amount;
+    private String unit;
+    
 
-    public Donation(int id, int userId, DonationType type, LocalDate date) {
+    public Donation(int id, int userId, DonationType type, LocalDate date, double amount, String unit) {
         this.id = id;
         this.userId = userId;
         this.type = type;
         this.date = date;
+        this.amount=amount;
+        this.unit=unit;
     }
 
-    public Donation(int userId, DonationType type, LocalDate date) {
-        this.userId = userId;
-        this.type = type;
-        this.date = date;
+    public Donation(int userId, DonationType type, LocalDate date, double amount, String unit) {
+        this(0, userId, type, date, amount, unit);
     }
     
     public Donation(DonationType type, String date) {
     this.type = type;
     this.date = LocalDate.parse(date);
+    this.amount=0;
 }
 
 
@@ -45,7 +49,17 @@ public class Donation {
     public LocalDate getDate() {
         return date;
     }
+    
+    public double getAmount() {
+        return amount;
+    }
 
+    public String getUnit() {
+        return unit;
+    }
+
+    
+    
     // Veritabanına yazarken kolaylık sağlaması için
     public String getTypeName() {
         return type.getTypeName();
@@ -54,7 +68,7 @@ public class Donation {
     
     @Override
     public String toString() {
-         return "Bağış: " + type + " - Tarih: " + date;    }
+         return "Bağış: " + type + " - Tarih: " + date + " - Miktar: " + amount + unit;    }
     
 }
 

@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,51 +18,50 @@ import java.util.Optional;
 
 public class donationDAO {
     
-    public void addDonation(Donation donation) {
-        String sql = "INSERT INTO Donation(user_id, type, date) VALUES (?, ?, ?)";
+   public void addDonation(Donation donation) {
+    String sql = "INSERT INTO Donation(user_id, type, date, amount, unit) VALUES (?, ?, ?, ?, ?)";
+    try (Connection conn = DBconnection.connect();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-        try (Connection conn = DBconnection.connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        pstmt.setInt(1, donation.getUserId());
+        pstmt.setString(2, donation.getTypeName());
+        pstmt.setString(3, donation.getDate().toString());
+        pstmt.setDouble(4, donation.getAmount());
+        pstmt.setString(5, donation.getUnit());
+        pstmt.executeUpdate();
 
-            pstmt.setInt(1, donation.getUserId());
-            pstmt.setString(2, donation.getType().toString());
-            pstmt.setString(3, donation.getDate().toString());
-
-            pstmt.executeUpdate();
-            System.out.println("Bağış kaydedildi.");
-
-        } catch (SQLException e) {
-            System.out.println("Bağış eklenirken hata: " + e.getMessage());
-        }
+        System.out.println("Bağış kaydedildi.");
+    } catch (SQLException e) {
+        System.out.println("Bağış eklenirken hata: " + e.getMessage());
     }
-
-    public List<Donation> getDonationsByUserId(int userId) {
-        List<Donation> donations = new ArrayList<>();
-        String sql = "SELECT * FROM Donation WHERE user_id = ?";
-
-        try (Connection conn = DBconnection.connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, userId);
-            ResultSet rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                 Donation donation = new Donation(
-              rs.getInt("id"),
-           rs.getInt("user_id"),
-             DonationFactory.createType(rs.getString("type")), // Interface yapısı
-             LocalDate.parse(rs.getString("date"))
-    );
-    donations.add(donation);
 }
 
-        } catch (SQLException e) {
-            System.out.println("Bağışlar çekilirken hata: " + e.getMessage());
-        }
 
-        return donations;
- 
+    public List<Donation> getDonationsByUserId(int userId) {
+    List<Donation> donations = new ArrayList<>();
+    String sql = "SELECT id, user_id, type, date, amount, unit FROM Donation WHERE user_id = ? ORDER BY date DESC, id ASC";
+
+     try (Connection conn = DBconnection.connect();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, userId);
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()) {
+            donations.add(new Donation(
+                rs.getInt("id"),
+                rs.getInt("user_id"),
+                DonationFactory.createType(rs.getString("type")),
+                LocalDate.parse(rs.getString("date")),
+                rs.getDouble("amount"),
+                rs.getString("unit")
+            ));
+        }
+    } catch (SQLException e) {
+        System.out.println("Bağışlar çekilirken hata: " + e.getMessage());
     }
+
+    return donations;
+}
+
     
     public Optional<Map.Entry<Integer, Integer>> getTopDonorOfMonth() {
     String sql = "SELECT user_id, COUNT(*) as total FROM Donation " +
@@ -83,30 +83,189 @@ public class donationDAO {
     }
     return Optional.empty();
 }
+    
+    
+public List<Donation> getAllDonations() {
+    List<Donation> donations = new ArrayList<>();
+    String sql = "SELECT id, user_id, type, date, amount, unit FROM Donation ORDER BY date DESC, id ASC";
 
-    public List<Donation> getAllDonations() {
-        List<Donation> donations = new ArrayList<>();
+    try (Connection conn = DBconnection.connect();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+
+        while (rs.next()) {
+            donations.add(new Donation(
+                rs.getInt("id"),
+                rs.getInt("user_id"),
+                DonationFactory.createType(rs.getString("type")),
+                LocalDate.parse(rs.getString("date")),
+                rs.getDouble("amount"),
+                rs.getString("unit")
+            ));
+        }
+    } catch (SQLException e) {  e.printStackTrace();  }
+  
+    return donations;
+}
+  public Map<String, Object> getSummaryWithFilters(
+            String usernameOrNull,
+            String typeOrNull,
+            LocalDate startOrNull,
+            LocalDate endOrNull
+    ) {
+        StringBuilder sb = new StringBuilder(
+            "SELECT COUNT(*) AS cnt, COALESCE(SUM(d.amount),0) AS total " +
+            "FROM Donation d JOIN User u ON d.user_id = u.id WHERE 1=1"
+        );
+        List<Object> params = new ArrayList<>();
+
+        if (usernameOrNull != null && !usernameOrNull.isBlank()) {
+            sb.append(" AND u.username LIKE ? ");
+            params.add("%" + usernameOrNull.trim() + "%");
+        }
+        if (typeOrNull != null && !typeOrNull.isBlank()) {
+            sb.append(" AND lower(d.type) = ? ");
+            params.add(typeOrNull.toLowerCase());
+        }
+        if (startOrNull != null) {
+            sb.append(" AND d.date >= ? ");
+            params.add(startOrNull.toString());
+        }
+        if (endOrNull != null) {
+            sb.append(" AND d.date <= ? ");
+            params.add(endOrNull.toString());
+        }
+
         try (Connection conn = DBconnection.connect();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT * FROM Donation")) {
+             PreparedStatement ps = conn.prepareStatement(sb.toString())) {
 
-            while (rs.next()) {
-                int id = rs.getInt("id");
-                int userId = rs.getInt("user_id");
-                String type = rs.getString("type");
-                String date = rs.getString("date");
-                   donations.add(new Donation(
-    id,
-    userId,
-    DonationFactory.createType(type), // string → interface
-    LocalDate.parse(date)             // string → LocalDate
-));
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("count", rs.getInt("cnt"));
+                    map.put("total", rs.getDouble("total"));
+                    return map;
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println("Özet hatası: " + e.getMessage());
         }
-        return donations;
+        Map<String, Object> empty = new HashMap<>();
+        empty.put("count", 0);
+        empty.put("total", 0.0);
+        return empty;
+    }
+
+  
+     public List<Map<String, Object>> getTypeBreakdown(
+            String usernameOrNull,
+            LocalDate startOrNull,
+            LocalDate endOrNull
+    ) {
+        StringBuilder sb = new StringBuilder(
+            "SELECT d.type, COUNT(*) AS cnt, COALESCE(SUM(d.amount),0) AS total " +
+            "FROM Donation d JOIN User u ON d.user_id = u.id WHERE 1=1"
+        );
+        List<Object> params = new ArrayList<>();
+
+        if (usernameOrNull != null && !usernameOrNull.isBlank()) {
+            sb.append(" AND u.username LIKE ? ");
+            params.add("%" + usernameOrNull.trim() + "%");
+        }
+        if (startOrNull != null) {
+            sb.append(" AND d.date >= ? ");
+            params.add(startOrNull.toString());
+        }
+        if (endOrNull != null) {
+            sb.append(" AND d.date <= ? ");
+            params.add(endOrNull.toString());
+        }
+        sb.append(" GROUP BY d.type ORDER BY d.type ASC");
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+        try (Connection conn = DBconnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("type", rs.getString("type"));
+                    row.put("count", rs.getInt("cnt"));
+                    row.put("total", rs.getDouble("total"));
+                    rows.add(row);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Tür özeti hatası: " + e.getMessage());
+        }
+        return rows;
+    }
+ public List<Donation> getDonationsWithFilters(
+        String usernameOrNull,
+        String typeOrNull,
+        java.time.LocalDate startOrNull,
+        java.time.LocalDate endOrNull,
+        String orderBy // "date DESC, id DESC" gibi
+) {
+    StringBuilder sb = new StringBuilder(
+        "SELECT d.id, d.user_id, d.type, d.date, d.amount, d.unit " +
+        "FROM Donation d JOIN User u ON d.user_id = u.id WHERE 1=1"
+    );
+    java.util.List<Object> params = new java.util.ArrayList<>();
+
+    if (usernameOrNull != null && !usernameOrNull.isBlank()) {
+        sb.append(" AND u.username LIKE ? ");
+        params.add("%" + usernameOrNull.trim() + "%");
+    }
+    if (typeOrNull != null && !typeOrNull.isBlank()) {
+        sb.append(" AND lower(d.type) = ? ");
+        params.add(typeOrNull.toLowerCase());
+    }
+    if (startOrNull != null) {
+        sb.append(" AND d.date >= ? ");
+        params.add(startOrNull.toString());
+    }
+    if (endOrNull != null) {
+        sb.append(" AND d.date <= ? ");
+        params.add(endOrNull.toString());
+    }
+
+    if (orderBy != null && !orderBy.isBlank()) {
+        sb.append(" ORDER BY ").append(orderBy);
+    } else {
+        sb.append(" ORDER BY d.date DESC, d.id DESC");
+    }
+
+    java.util.List<Donation> out = new java.util.ArrayList<>();
+    try (java.sql.Connection conn = DBconnection.connect();
+         java.sql.PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+
+        for (int i = 0; i < params.size(); i++) {
+            ps.setObject(i + 1, params.get(i));
+        }
+        try (java.sql.ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                out.add(new Donation(
+                    rs.getInt("id"),
+                    rs.getInt("user_id"),
+                    DonationFactory.createType(rs.getString("type")),
+                    java.time.LocalDate.parse(rs.getString("date")),
+                    rs.getDouble("amount"),
+                    rs.getString("unit")
+                ));
+            }
+        }
+    } catch (java.sql.SQLException e) {
+        System.out.println("Filtreli sorgu hatası: " + e.getMessage());
+    }
+    return out;
 }
 
-} 
 
+}

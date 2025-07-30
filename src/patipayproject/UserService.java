@@ -2,6 +2,7 @@
 package patipayproject;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,37 +66,26 @@ public class UserService {
 
 
     // Bağış kaydetme işlemi
-    public static boolean makeDonation(String username, String type, String date) {
-        String userQuery = "SELECT id FROM User WHERE username = ?";
-        String insertDonation = "INSERT INTO Donation(user_id, type, date) VALUES (?, ?, ?)";
+  public static boolean makeDonation(int userId, String type, LocalDate date, double amount, String unit) {
+    String sql = "INSERT INTO Donation(user_id, type, date, amount, unit) VALUES (?, ?, ?, ?, ?)";
+    try (Connection conn = DBconnection.connect();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
 
-        try (Connection conn = DBconnection.connect();
-             PreparedStatement getUserStmt = conn.prepareStatement(userQuery);
-             PreparedStatement insertStmt = conn.prepareStatement(insertDonation)) {
-            
-            getUserStmt.setString(1, username);
-            ResultSet rs = getUserStmt.executeQuery();
-
-            if (rs.next()) {
-                int userId = rs.getInt("id");
-
-                insertStmt.setInt(1, userId);
-                insertStmt.setString(2, type);
-                insertStmt.setString(3, date);
-                insertStmt.executeUpdate();
-
-                System.out.println("✅ Bağış kaydedildi.");
-                return true;
-            } else {
-                System.out.println("❌ Kullanıcı bulunamadı.");
-                return false;
-            }
-
-        } catch (SQLException e) {
-            System.out.println("❌ Bağış kaydında hata: " + e.getMessage());
-            return false;
-        }
+        ps.setInt(1, userId);
+        ps.setString(2, type);
+        ps.setString(3, date.toString());
+        ps.setDouble(4, amount);
+        ps.setString(5, unit);
+        ps.executeUpdate();
+        System.out.println("✅ Bağış kaydedildi.");
+        return true;
+    } catch (SQLException e) {
+        System.out.println("❌ Bağış kaydında hata: " + e.getMessage());
+        return false;
     }
+}
+
+
 
     // Kullanıcının tüm bağışlarını getir
     public static List<Donation> getUserDonations(String username) {

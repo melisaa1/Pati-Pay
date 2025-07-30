@@ -10,4 +10,10 @@ public class mamaDonation implements DonationType{
         return "mama";
     }
     
+    @Override
+    public String getDefaultUnit() { 
+        return "kg";
+    
+    }
+    
 }
