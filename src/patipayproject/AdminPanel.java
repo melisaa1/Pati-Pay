@@ -4,14 +4,13 @@ package patipayproject;
 
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.RowSorter;
-import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
+import javax.swing.table.*;
+import javax.swing.RowSorter.SortKey;
+import javax.swing.SortOrder;
 import java.awt.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
+import java.time.*;
 import java.util.*;
 import java.util.List;
 
@@ -19,8 +18,8 @@ public class AdminPanel extends JFrame {
 
     private JTextField usernameField;
     private JComboBox<String> typeCombo;
-    private JTextField startDateField;
-    private JTextField endDateField;
+    private JSpinner startDateSpinner;
+    private JSpinner endDateSpinner;  
 
     private JTable table;
     private DefaultTableModel model;
@@ -54,23 +53,36 @@ public class AdminPanel extends JFrame {
         typeCombo = new JComboBox<>(new String[]{"Hepsi", "Mama", "Su", "Para"});
         p.add(typeCombo);
 
-        p.add(new JLabel("Başlangıç (yyyy-MM-dd):"));
-        startDateField = new JTextField(10);
-        p.add(startDateField);
+        // Spinner modeli (tarih tipi)
+        SpinnerDateModel startModel = new SpinnerDateModel();
+        SpinnerDateModel endModel = new SpinnerDateModel();
 
-        p.add(new JLabel("Bitiş (yyyy-MM-dd):"));
-        endDateField = new JTextField(10);
-        p.add(endDateField);
+        // Spinner bileşenleri
+        startDateSpinner = new JSpinner(startModel);
+        endDateSpinner = new JSpinner(endModel);
 
-        JButton applyBtn = new JButton("Uygula");
+        // Görünüm için tarih formatı ayarla
+        JSpinner.DateEditor startEditor = new JSpinner.DateEditor(startDateSpinner, "yyyy-MM-dd");
+        JSpinner.DateEditor endEditor = new JSpinner.DateEditor(endDateSpinner, "yyyy-MM-dd");
+        startDateSpinner.setEditor(startEditor);
+        endDateSpinner.setEditor(endEditor);
+
+        p.add(new JLabel("Başlangıç Tarihi:"));
+        p.add(startDateSpinner);
+
+        p.add(new JLabel("Bitiş Tarihi:"));
+        p.add(endDateSpinner);
+
+        JButton applyBtn = new JButton("Filtrele");
         JButton resetBtn = new JButton("Sıfırla");
 
         applyBtn.addActionListener(e -> applyFilters(null));
         resetBtn.addActionListener(e -> {
             usernameField.setText("");
             typeCombo.setSelectedIndex(0);
-            startDateField.setText("");
-            endDateField.setText("");
+            // Tarih spinnerlarını bugünün tarihi yap (veya istersen null yap)
+            startDateSpinner.setValue(new Date());
+            endDateSpinner.setValue(new Date());
             applyFilters("date DESC");
         });
 
@@ -82,7 +94,7 @@ public class AdminPanel extends JFrame {
 
     /** Orta tablo */
     private void buildTable() {
-        String[] columns={"ID", "Kullanıcı ID", "Bağış Türü", "Tarih", "Miktar", "Birim"};
+        String[] columns = {"ID", "Kullanıcı Adı", "Tür", "Tarih", "Miktar", "Birim"};
         model = new DefaultTableModel(columns,0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -104,8 +116,8 @@ public class AdminPanel extends JFrame {
         JButton typeBreakBtn    = new JButton("Tür Bazlı Özet");
         JButton exportBtn       = new JButton("CSV Dışa Aktar");
 
-        sortDateAscBtn.addActionListener(e -> applyFilters("date ASC, id ASC"));
-        sortDateDescBtn.addActionListener(e -> applyFilters("date DESC, id DESC"));
+        sortDateAscBtn.addActionListener(e -> applyFilters("d.date ASC, d.id ASC"));
+        sortDateDescBtn.addActionListener(e -> applyFilters("d.date DESC, d.id DESC"));
         sortTypeBtn.addActionListener(e -> applyFilters("type ASC, date DESC"));
 
         summaryBtn.addActionListener(e -> showSummaryDialog());
@@ -128,8 +140,23 @@ public class AdminPanel extends JFrame {
         String type = (String) typeCombo.getSelectedItem();
         if ("Hepsi".equalsIgnoreCase(type)) type = null;
 
-        LocalDate start = parseDateOrNull(startDateField.getText().trim());
-        LocalDate end   = parseDateOrNull(endDateField.getText().trim());
+        // JSpinner'dan tarihleri al ve LocalDate'e çevir
+        Date startUtil = (Date) startDateSpinner.getValue();
+        Date endUtil = (Date) endDateSpinner.getValue();
+
+        LocalDate start = null;
+        LocalDate end = null;
+
+        if (startUtil != null) {
+            start = Instant.ofEpochMilli(startUtil.getTime())
+                           .atZone(ZoneId.systemDefault())
+                           .toLocalDate();
+        }
+        if (endUtil != null) {
+            end = Instant.ofEpochMilli(endUtil.getTime())
+                         .atZone(ZoneId.systemDefault())
+                         .toLocalDate();
+        }
 
         donationDAO dao = new donationDAO();
         List<Donation> list = dao.getDonationsWithFilters(
@@ -147,11 +174,11 @@ public class AdminPanel extends JFrame {
             TableRowSorter<TableModel> sorter = (TableRowSorter<TableModel>) table.getRowSorter();
             List<RowSorter.SortKey> keys = new ArrayList<>();
             if (orderByOrNull.toLowerCase().startsWith("date asc")) {
-                keys.add(new RowSorter.SortKey(3, SortOrder.ASCENDING));  // 3 = Tarih
+                keys.add(new SortKey(3, SortOrder.ASCENDING));  // 3 = Tarih sütunu
             } else if (orderByOrNull.toLowerCase().startsWith("date desc")) {
-                keys.add(new RowSorter.SortKey(3, SortOrder.DESCENDING));
+                keys.add(new SortKey(3, SortOrder.DESCENDING));
             } else if (orderByOrNull.toLowerCase().startsWith("type")) {
-                keys.add(new RowSorter.SortKey(2, SortOrder.ASCENDING));  // 2 = Tür
+                keys.add(new SortKey(2, SortOrder.ASCENDING));  // 2 = Tür sütunu
             }
             sorter.setSortKeys(keys);
         }
@@ -159,11 +186,14 @@ public class AdminPanel extends JFrame {
 
     /** Tabloyu doldur */
     private void fillTable(List<Donation> data) {
+        String[] cols = {"ID", "Kullanıcı Adı", "Tür", "Tarih", "Miktar", "Birim"};
+        model.setColumnIdentifiers(cols);
+
         model.setRowCount(0);
         for (Donation d : data) {
             model.addRow(new Object[]{
                 d.getId(),
-                d.getUserId(),
+                d.getUsername(),
                 d.getTypeName().toUpperCase(),
                 d.getDate().toString(),
                 String.format("%.2f", d.getAmount()),
@@ -177,8 +207,23 @@ public class AdminPanel extends JFrame {
         String username = usernameField.getText().trim();
         String type = (String) typeCombo.getSelectedItem();
         if ("Hepsi".equalsIgnoreCase(type)) type = null;
-        LocalDate start = parseDateOrNull(startDateField.getText().trim());
-        LocalDate end   = parseDateOrNull(endDateField.getText().trim());
+
+        Date startUtil = (Date) startDateSpinner.getValue();
+        Date endUtil = (Date) endDateSpinner.getValue();
+
+        LocalDate start = null;
+        LocalDate end = null;
+
+        if (startUtil != null) {
+            start = Instant.ofEpochMilli(startUtil.getTime())
+                           .atZone(ZoneId.systemDefault())
+                           .toLocalDate();
+        }
+        if (endUtil != null) {
+            end = Instant.ofEpochMilli(endUtil.getTime())
+                         .atZone(ZoneId.systemDefault())
+                         .toLocalDate();
+        }
 
         donationDAO dao = new donationDAO();
         Map<String, Object> sum = dao.getSummaryWithFilters(
@@ -198,8 +243,23 @@ public class AdminPanel extends JFrame {
     /** Tür bazlı özet (hangi türden kaç adet, toplam miktar) */
     private void showTypeBreakdownDialog() {
         String username = usernameField.getText().trim();
-        LocalDate start = parseDateOrNull(startDateField.getText().trim());
-        LocalDate end   = parseDateOrNull(endDateField.getText().trim());
+
+        Date startUtil = (Date) startDateSpinner.getValue();
+        Date endUtil = (Date) endDateSpinner.getValue();
+
+        LocalDate start = null;
+        LocalDate end = null;
+
+        if (startUtil != null) {
+            start = Instant.ofEpochMilli(startUtil.getTime())
+                           .atZone(ZoneId.systemDefault())
+                           .toLocalDate();
+        }
+        if (endUtil != null) {
+            end = Instant.ofEpochMilli(endUtil.getTime())
+                         .atZone(ZoneId.systemDefault())
+                         .toLocalDate();
+        }
 
         donationDAO dao = new donationDAO();
         List<Map<String, Object>> rows = dao.getTypeBreakdown(
@@ -258,11 +318,4 @@ public class AdminPanel extends JFrame {
         }
     }
 
-    private LocalDate parseDateOrNull(String s) {
-        if (s == null || s.isBlank()) return null;
-        try { return LocalDate.parse(s); } catch (Exception ex) { 
-            JOptionPane.showMessageDialog(this, "Tarih formatı geçersiz. Örn: 2025-07-30");
-            return null; 
-        }
-    }
 }

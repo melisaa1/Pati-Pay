@@ -207,65 +207,67 @@ public List<Donation> getAllDonations() {
         return rows;
     }
  public List<Donation> getDonationsWithFilters(
-        String usernameOrNull,
-        String typeOrNull,
-        java.time.LocalDate startOrNull,
-        java.time.LocalDate endOrNull,
-        String orderBy // "date DESC, id DESC" gibi
+        String usernameFilter,
+        String typeFilter,
+        LocalDate startDate,
+        LocalDate endDate,
+        String orderBy
 ) {
-    StringBuilder sb = new StringBuilder(
-        "SELECT d.id, d.user_id, d.type, d.date, d.amount, d.unit " +
-        "FROM Donation d JOIN User u ON d.user_id = u.id WHERE 1=1"
-    );
-    java.util.List<Object> params = new java.util.ArrayList<>();
+    List<Donation> donations = new ArrayList<>();
+    String sql =
+        "SELECT d.id, d.user_id, u.username, d.type, d.date, d.amount, d.unit " +
+        "FROM Donation d " +
+        "JOIN User u ON d.user_id = u.id " +
+        "WHERE 1=1";
 
-    if (usernameOrNull != null && !usernameOrNull.isBlank()) {
-        sb.append(" AND u.username LIKE ? ");
-        params.add("%" + usernameOrNull.trim() + "%");
+    if (usernameFilter != null && !usernameFilter.isBlank()) {
+        sql += " AND u.username LIKE ?";
     }
-    if (typeOrNull != null && !typeOrNull.isBlank()) {
-        sb.append(" AND lower(d.type) = ? ");
-        params.add(typeOrNull.toLowerCase());
+    if (typeFilter != null && !typeFilter.isBlank()) {
+        sql += " AND d.type = ?";
     }
-    if (startOrNull != null) {
-        sb.append(" AND d.date >= ? ");
-        params.add(startOrNull.toString());
+    if (startDate != null) {
+        sql += " AND d.date >= ?";
     }
-    if (endOrNull != null) {
-        sb.append(" AND d.date <= ? ");
-        params.add(endOrNull.toString());
+    if (endDate != null) {
+        sql += " AND d.date <= ?";
     }
-
     if (orderBy != null && !orderBy.isBlank()) {
-        sb.append(" ORDER BY ").append(orderBy);
-    } else {
-        sb.append(" ORDER BY d.date DESC, d.id DESC");
+        sql += " ORDER BY " + orderBy;
     }
 
-    java.util.List<Donation> out = new java.util.ArrayList<>();
-    try (java.sql.Connection conn = DBconnection.connect();
-         java.sql.PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+    try (Connection conn = DBconnection.connect();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
 
-        for (int i = 0; i < params.size(); i++) {
-            ps.setObject(i + 1, params.get(i));
+        int idx = 1;
+        if (usernameFilter != null && !usernameFilter.isBlank()) {
+            ps.setString(idx++, "%" + usernameFilter + "%");
         }
-        try (java.sql.ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                out.add(new Donation(
-                    rs.getInt("id"),
-                    rs.getInt("user_id"),
-                    DonationFactory.createType(rs.getString("type")),
-                    java.time.LocalDate.parse(rs.getString("date")),
-                    rs.getDouble("amount"),
-                    rs.getString("unit")
-                ));
-            }
+        if (typeFilter != null && !typeFilter.isBlank()) {
+            ps.setString(idx++, typeFilter);
         }
-    } catch (java.sql.SQLException e) {
-        System.out.println("Filtreli sorgu hatası: " + e.getMessage());
+        if (startDate != null) {
+            ps.setString(idx++, startDate.toString());
+        }
+        if (endDate != null) {
+            ps.setString(idx++, endDate.toString());
+        }
+
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()) {
+            donations.add(new Donation(
+                rs.getInt("id"),
+                rs.getInt("user_id"),
+                rs.getString("username"),
+                DonationFactory.createType(rs.getString("type")),
+                LocalDate.parse(rs.getString("date")),
+                rs.getDouble("amount"),
+                rs.getString("unit")
+            ));
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
     }
-    return out;
+    return donations;
 }
-
-
 }

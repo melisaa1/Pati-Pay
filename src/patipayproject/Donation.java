@@ -7,6 +7,7 @@ public class Donation {
     
     private int id; // Veritabanı için
     private int userId; // Kullanıcı ID'si
+    private String username;
     private DonationType type;
     private LocalDate date;
     private double amount;
@@ -31,6 +32,18 @@ public class Donation {
     this.date = LocalDate.parse(date);
     this.amount=0;
 }
+    
+    public Donation(int id, int userId, String username, DonationType type,
+                LocalDate date, double amount, String unit) {
+    this.id = id;
+    this.userId = userId;
+    this.username = username;
+    this.type = type;
+    this.date = date;
+    this.amount = amount;
+    this.unit = unit;
+}
+
 
 
     // Getterlar
@@ -57,6 +70,15 @@ public class Donation {
     public String getUnit() {
         return unit;
     }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+    
 
     
     
