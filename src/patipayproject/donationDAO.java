@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 public class donationDAO {
@@ -270,4 +271,97 @@ public List<Donation> getAllDonations() {
     }
     return donations;
 }
+ 
+ 
+   public static List<String> getTopDonorsByScore(){
+       final double paraPuan=1;
+       final double mamaPuan=0.8;
+       final double suPuan=0.6;
+       
+       Map<String, Double > scoreMap=new HashMap<>();
+       
+       String query = "SELECT u.username, d.type, d.amount " +
+               "FROM Donation d " +
+               "JOIN User u ON d.user_id = u.id";
+
+       
+       try(Connection conn=DBconnection.connect();
+               PreparedStatement stmt=conn.prepareStatement(query);
+               ResultSet rs=stmt.executeQuery()){
+              
+           while(rs.next()){
+                 String username = rs.getString("username");
+                 String type = rs.getString("type");
+                 double amount = rs.getDouble("amount");
+
+                 double puan = 0;
+                 
+                 
+                switch(type){
+                    
+                    case "Para":
+                        puan=amount*paraPuan;
+                        break;
+                    case "Mama":
+                        puan=amount*mamaPuan;
+                        break;
+                    case "Su":
+                        puan=amount*suPuan;
+                        break;
+                        
+            }
+            scoreMap.put(username, scoreMap.getOrDefault(username, 0.0) + puan);
+        
+           }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+           return scoreMap.entrySet()
+                   .stream()
+                   .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()))
+                   .limit(3)
+                   .map(e -> e.getKey() + " (" + String.format("%.2f", e.getValue()) + " puan)")
+                   .collect(Collectors.toList());
 }
+   
+   
+   public static double getTotalScoreByUserId(int userId) {
+    final double paraPuan = 1;
+    final double mamaPuan = 0.8;
+    final double suPuan = 0.6;
+
+    double totalScore = 0;
+
+    String query = "SELECT type, amount FROM Donation WHERE user_id = ?";
+
+    try (Connection conn = DBconnection.connect();
+         PreparedStatement stmt = conn.prepareStatement(query)) {
+
+        stmt.setInt(1, userId);
+        ResultSet rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            String type = rs.getString("type");
+            double amount = rs.getDouble("amount");
+
+            switch (type) {
+                case "Para":
+                    totalScore += amount * paraPuan;
+                    break;
+                case "Mama":
+                    totalScore += amount * mamaPuan;
+                    break;
+                case "Su":
+                    totalScore += amount * suPuan;
+                    break;
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+
+    return totalScore;
+}
+}
+               
+   
