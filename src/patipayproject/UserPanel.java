@@ -14,7 +14,6 @@ public class UserPanel extends JFrame {
 
     private JTable donationTable;
     private DefaultTableModel donationModel;
-
     private JComboBox<String> typeCombo;
     private JTextField amountField;
     private JComboBox<String> unitCombo;
@@ -41,11 +40,30 @@ public class UserPanel extends JFrame {
 
     private void buildHeader() {
         String username = UserService.getUsernameById(userId);
+
+        JPanel headerPanel = new JPanel(new BorderLayout());
+
         JLabel welcomeLabel = new JLabel("Hoş geldin, " + username + " 👋", SwingConstants.CENTER);
         welcomeLabel.setFont(new Font("Arial", Font.BOLD, 20));
         welcomeLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
-        add(welcomeLabel, BorderLayout.NORTH);
-    }
+
+        JButton exitButton = new JButton("Çıkış");
+        exitButton.setBackground(Color.RED);
+        exitButton.setForeground(Color.WHITE);
+        exitButton.addActionListener(e -> {
+          int onay = JOptionPane.showConfirmDialog(this, "Uygulamadan çıkmak istediğinize emin misiniz?", "Çıkış", JOptionPane.YES_NO_OPTION);
+            if (onay == JOptionPane.YES_OPTION) {
+              dispose();
+              System.exit(0); 
+        }
+    });
+
+    headerPanel.add(welcomeLabel, BorderLayout.CENTER);
+    headerPanel.add(exitButton, BorderLayout.EAST);
+
+    add(headerPanel, BorderLayout.NORTH);
+}
+
 
     private void buildCenterTable() {
         String[] cols = {"ID", "Tür", "Tarih", "Miktar", "Birim"};
@@ -56,20 +74,19 @@ public class UserPanel extends JFrame {
         donationTable.setAutoCreateRowSorter(true);
 
         JScrollPane scroll = new JScrollPane(donationTable);
-        scroll.setBorder(BorderFactory.createTitledBorder("📋 Yaptığın Bağışlar"));
+        scroll.setBorder(BorderFactory.createTitledBorder("Yaptığın Bağışlar"));
         add(scroll, BorderLayout.CENTER);
     }
 
     private void buildFooterDonate() {
         JPanel footerPanel = new JPanel(new BorderLayout());
 
-        // Sol: Puan bilgisi
         scoreLabel = new JLabel();
         scoreLabel.setFont(new Font("Arial", Font.BOLD, 14));
         scoreLabel.setForeground(new Color(0, 102, 204));
         scoreLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 0));
 
-        // Sağ: Bağış formu
+        
         JPanel donatePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JLabel selectLabel = new JLabel("Bağış Türü:");
         String[] types = {"Mama", "Su", "Para"};
@@ -87,6 +104,8 @@ public class UserPanel extends JFrame {
         JButton donateButton = new JButton("Bağış Yap");
         donateButton.setBackground(new Color(255, 153, 51));
         donateButton.addActionListener(e -> handleDonate());
+        
+        
 
         donatePanel.add(selectLabel);
         donatePanel.add(typeCombo);
@@ -145,8 +164,8 @@ public class UserPanel extends JFrame {
         if (success) {
             JOptionPane.showMessageDialog(this, "✅ Bağış kaydedildi!");
             amountField.setText("");
-            refreshDonationTable();   // tabloyu yenile
-            updateScoreLabel();       // puanı güncelle
+            refreshDonationTable();  
+            updateScoreLabel();      
         } else {
             JOptionPane.showMessageDialog(this, "❌ Bağış kaydedilemedi!");
         }
@@ -174,6 +193,6 @@ public class UserPanel extends JFrame {
 
     private void updateScoreLabel() {
         double score = new donationDAO().getTotalScoreByUserId(userId);
-        scoreLabel.setText("  🌟 Toplam Puanınız: " + String.format("%.2f", score));
+        scoreLabel.setText("🌟 Toplam Puanınız: " + String.format("%.2f", score));
     }
 }

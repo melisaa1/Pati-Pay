@@ -25,7 +25,7 @@ public class AdminPanel extends JFrame {
 
     public AdminPanel() {
         setTitle("Yönetici Paneli");
-        setSize(950, 600);
+        setSize(1050, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10,10));
         setLocationRelativeTo(null);
@@ -34,7 +34,7 @@ public class AdminPanel extends JFrame {
         buildTable();
         buildButtonsBar();
 
-        // İlk açılışta tüm veriler
+        
         applyFilters("date DESC");
 
         setVisible(true);
@@ -167,6 +167,12 @@ public class AdminPanel extends JFrame {
        });
 
 
+       JButton exitBtn = new JButton("Exıt");
+       exitBtn.addActionListener(e -> {
+       dispose();
+       System.exit(0); 
+      });
+
 
         exportBtn.addActionListener(e -> exportTableToCsv());
 
@@ -177,7 +183,7 @@ public class AdminPanel extends JFrame {
         bar.add(typeBreakBtn);
         bar.add(exportBtn);
         bar.add(topDonorsBtn);
-
+        bar.add(exitBtn);
         add(bar, BorderLayout.SOUTH);
     }
 
@@ -263,13 +269,13 @@ public class AdminPanel extends JFrame {
                 file = new File(file.getParentFile(), file.getName() + ".csv");
             }
             try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
-                // başlık
+              
                 for (int c = 0; c < table.getColumnCount(); c++) {
                     pw.print(table.getColumnName(c));
                     if (c < table.getColumnCount() - 1) pw.print(",");
                 }
                 pw.println();
-                // satırlar
+              
                 for (int r = 0; r < table.getRowCount(); r++) {
                     for (int c = 0; c < table.getColumnCount(); c++) {
                         Object val = table.getValueAt(r, c);

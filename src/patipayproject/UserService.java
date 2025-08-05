@@ -8,9 +8,6 @@ import java.util.List;
 
 public class UserService {
     
- 
-
-    // Kullanıcı giriş metodu
     public static int login(String username, String password) {
         String sql = "SELECT id FROM User WHERE username = ? AND password = ?";
 
@@ -22,9 +19,9 @@ public class UserService {
             ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                return rs.getInt("id"); // Kullanıcı bulundu, ID döndür
+                return rs.getInt("id"); 
             } else {
-                return -1; // Kullanıcı bulunamadı
+                return -1; 
             }
 
         } catch (SQLException e) {
@@ -34,7 +31,6 @@ public class UserService {
     }
     
 
-    // Kullanıcı kayıt metodu: Başarılıysa true döner, kullanıcı varsa false döner
     public static boolean register(String username, String password) {
         String sqlCheck = "SELECT id FROM User WHERE username = ?";
         String sqlInsert = "INSERT INTO User(username, password) VALUES (?, ?)";
@@ -46,7 +42,6 @@ public class UserService {
             ResultSet rs = checkStmt.executeQuery();
 
             if (rs.next()) {
-                // Kullanıcı zaten var
                 return false;
             } else {
                 try (PreparedStatement insertStmt = conn.prepareStatement(sqlInsert)) {
@@ -65,7 +60,6 @@ public class UserService {
 
 
 
-    // Bağış kaydetme işlemi
   public static boolean makeDonation(int userId, String type, LocalDate date, double amount, String unit) {
     String sql = "INSERT INTO Donation(user_id, type, date, amount, unit) VALUES (?, ?, ?, ?, ?)";
     try (Connection conn = DBconnection.connect();
@@ -87,7 +81,6 @@ public class UserService {
 
 
 
-    // Kullanıcının tüm bağışlarını getir
     public static List<Donation> getUserDonations(String username) {
         List<Donation> donations = new ArrayList<>();
         String sql = "SELECT d.type, d.date FROM Donation d " +
@@ -103,7 +96,6 @@ public class UserService {
                 String type = rs.getString("type");
                 String date = rs.getString("date");
 
-                // DonationType interface'ine göre ilgili donation nesnesi oluşturulmalı
                 DonationType donationType = DonationFactory.createType(type);
                 donations.add(new Donation(donationType, date));
             }

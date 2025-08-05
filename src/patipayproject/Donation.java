@@ -5,8 +5,8 @@ import java.time.LocalDate;
 
 public class Donation {
     
-    private int id; // Veritabanı için
-    private int userId; // Kullanıcı ID'si
+    private int id; 
+    private int userId; 
     private String username;
     private DonationType type;
     private LocalDate date;
@@ -46,7 +46,7 @@ public class Donation {
 
 
 
-    // Getterlar
+
     public int getId() {
         return id;
     }
@@ -78,11 +78,7 @@ public class Donation {
     public void setUsername(String username) {
         this.username = username;
     }
-    
 
-    
-    
-    // Veritabanına yazarken kolaylık sağlaması için
     public String getTypeName() {
         return type.getTypeName();
     }
