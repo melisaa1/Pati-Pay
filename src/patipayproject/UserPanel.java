@@ -2,34 +2,43 @@
  
 package patipayproject;
 
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.*;
+import java.io.File;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
+
+// GÜNCELLENMİŞ VE DÜZENLENMİŞ TAM SINIF
+
 public class UserPanel extends JFrame {
-
     private final int userId;
-
     private JTable donationTable;
     private DefaultTableModel donationModel;
     private JComboBox<String> typeCombo;
     private JTextField amountField;
     private JComboBox<String> unitCombo;
-    private JLabel scoreLabel;
+    private JLabel scoreValueLabel;
+
+    private JComboBox<String> filterTypeCombo;
+    private JSpinner startDateSpinner;
+    private JSpinner endDateSpinner;
 
     public UserPanel(int userId) {
         this.userId = userId;
 
-        setTitle("🐾PatiPay - Kullanıcı Paneli🐾");
-        setSize(850, 600);
+        setTitle("🐾 PatiPay - User Panel 🐾");
+        setSize(950, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
         setLocationRelativeTo(null);
 
         buildHeader();
-        buildCenterTable();
+        buildCenterPanel();
         buildFooterDonate();
 
         refreshDonationTable();
@@ -41,82 +50,172 @@ public class UserPanel extends JFrame {
     private void buildHeader() {
         String username = UserService.getUsernameById(userId);
 
-        JPanel headerPanel = new JPanel(new BorderLayout());
+        JPanel headerPanel = new JPanel(new BorderLayout(10, 10));
+        headerPanel.setBackground(new Color(245, 245, 245));
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JLabel welcomeLabel = new JLabel("Hoş geldin, " + username + " 👋", SwingConstants.CENTER);
-        welcomeLabel.setFont(new Font("Arial", Font.BOLD, 20));
-        welcomeLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        ImageIcon defaultIcon = new ImageIcon("src/assets/default_user.png");
+        Image scaledImage = defaultIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+        JLabel profilePicLabel = new JLabel(new ImageIcon(scaledImage));
+        profilePicLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        profilePicLabel.setToolTipText("Profil fotoğrafını değiştir");
 
-        JButton exitButton = new JButton("Çıkış");
-        exitButton.setBackground(Color.RED);
-        exitButton.setForeground(Color.WHITE);
+        profilePicLabel.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                JFileChooser chooser = new JFileChooser();
+                int result = chooser.showOpenDialog(null);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    File file = chooser.getSelectedFile();
+                    ImageIcon newIcon = new ImageIcon(file.getAbsolutePath());
+                    Image resized = newIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+                    profilePicLabel.setIcon(new ImageIcon(resized));
+                }
+            }
+        });
+
+        JLabel welcomeLabel = new JLabel("Hoş geldin " + username + " 👋", SwingConstants.CENTER);
+        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        welcomeLabel.setForeground(new Color(60, 60, 60));
+
+        JButton exitButton = new JButton("✖");
+        exitButton.setBackground(new Color(230, 230, 230));
+        exitButton.setForeground(new Color(150, 0, 0));
+        exitButton.setFont(new Font("Arial", Font.BOLD, 13));
+        exitButton.setFocusPainted(false);
+        exitButton.setPreferredSize(new Dimension(30, 25));
+        exitButton.setToolTipText("Çıkış yap");
+        exitButton.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
+
         exitButton.addActionListener(e -> {
-          int onay = JOptionPane.showConfirmDialog(this, "Uygulamadan çıkmak istediğinize emin misiniz?", "Çıkış", JOptionPane.YES_NO_OPTION);
+            int onay = JOptionPane.showConfirmDialog(this, "Uygulamadan çıkmak istiyor musunuz?", "Çıkış", JOptionPane.YES_NO_OPTION);
             if (onay == JOptionPane.YES_OPTION) {
-              dispose();
-              System.exit(0); 
-        }
-    });
+                dispose();
+                System.exit(0);
+            }
+        });
 
-    headerPanel.add(welcomeLabel, BorderLayout.CENTER);
-    headerPanel.add(exitButton, BorderLayout.EAST);
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        leftPanel.setOpaque(false);
+        leftPanel.add(profilePicLabel, BorderLayout.WEST);
 
-    add(headerPanel, BorderLayout.NORTH);
-}
+        headerPanel.add(leftPanel, BorderLayout.WEST);
+        headerPanel.add(welcomeLabel, BorderLayout.CENTER);
+        headerPanel.add(exitButton, BorderLayout.EAST);
 
+        add(headerPanel, BorderLayout.NORTH);
+    }
 
-    private void buildCenterTable() {
+    private void buildCenterPanel() {
+        JPanel centerPanel = new JPanel(new BorderLayout());
+
+        centerPanel.add(buildFilterPanel(), BorderLayout.NORTH);
+        centerPanel.add(buildCenterTable(), BorderLayout.CENTER);
+
+        add(centerPanel, BorderLayout.CENTER);
+    }
+
+    private JPanel buildFilterPanel() {
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        filterPanel.setBackground(new Color(250, 250, 250));
+        filterPanel.setBorder(BorderFactory.createTitledBorder("Filtrele"));
+
+        SpinnerDateModel startModel = new SpinnerDateModel();
+        SpinnerDateModel endModel = new SpinnerDateModel();
+        startDateSpinner = new JSpinner(startModel);
+        endDateSpinner = new JSpinner(endModel);
+
+        startDateSpinner.setEditor(new JSpinner.DateEditor(startDateSpinner, "yyyy-MM-dd"));
+        endDateSpinner.setEditor(new JSpinner.DateEditor(endDateSpinner, "yyyy-MM-dd"));
+
+        filterTypeCombo = new JComboBox<>(new String[]{"Tümü", "Mama", "Su", "Para"});
+
+        filterPanel.add(new JLabel("Başlangıç Tarihi:"));
+        filterPanel.add(startDateSpinner);
+        filterPanel.add(new JLabel("Bitiş Tarihi:"));
+        filterPanel.add(endDateSpinner);
+        filterPanel.add(new JLabel("Tür:"));
+        filterPanel.add(filterTypeCombo);
+
+        JButton filterBtn = new JButton("Filtrele");
+        JButton clearBtn = new JButton("Temizle");
+
+        filterBtn.addActionListener(e -> applyFilter());
+        clearBtn.addActionListener(e -> {
+            startDateSpinner.setValue(new java.util.Date());
+            endDateSpinner.setValue(new java.util.Date());
+            filterTypeCombo.setSelectedIndex(0);
+            refreshDonationTable();
+        });
+
+        filterPanel.add(filterBtn);
+        filterPanel.add(clearBtn);
+
+        return filterPanel;
+    }
+
+    private JScrollPane buildCenterTable() {
         String[] cols = {"ID", "Tür", "Tarih", "Miktar", "Birim"};
         donationModel = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
         };
         donationTable = new JTable(donationModel);
-        donationTable.setAutoCreateRowSorter(true);
+        donationTable.setRowHeight(28);
+        donationTable.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        donationTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 15));
+        donationTable.getTableHeader().setBackground(new Color(230, 230, 230));
+        donationTable.getTableHeader().setForeground(new Color(0, 120, 215));
+        donationTable.setSelectionBackground(new Color(176, 224, 230));
 
         JScrollPane scroll = new JScrollPane(donationTable);
         scroll.setBorder(BorderFactory.createTitledBorder("Yaptığın Bağışlar"));
-        add(scroll, BorderLayout.CENTER);
+        return scroll;
     }
 
     private void buildFooterDonate() {
         JPanel footerPanel = new JPanel(new BorderLayout());
 
-        scoreLabel = new JLabel();
-        scoreLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        scoreLabel.setForeground(new Color(0, 102, 204));
-        scoreLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 0));
+        // Sol: Bağış yapma formu
+        JPanel donatePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        donatePanel.setBackground(new Color(245, 245, 245));
 
-        
-        JPanel donatePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel selectLabel = new JLabel("Bağış Türü:");
-        String[] types = {"Mama", "Su", "Para"};
-        typeCombo = new JComboBox<>(types);
-
-        JLabel amountLabel = new JLabel("Miktar:");
-        amountField = new JTextField(8);
-
-        JLabel unitLabel = new JLabel("Birim:");
-        unitCombo = new JComboBox<>();
-
+        typeCombo = new JComboBox<>(new String[]{"Mama", "Su", "Para"});
         typeCombo.addActionListener(e -> populateUnitsByType());
-        typeCombo.setSelectedIndex(0);
+
+        amountField = new JTextField(8);
+        unitCombo = new JComboBox<>();
+        populateUnitsByType();
 
         JButton donateButton = new JButton("Bağış Yap");
-        donateButton.setBackground(new Color(255, 153, 51));
+        donateButton.setPreferredSize(new Dimension(110, 35));
+        donateButton.setBackground(new Color(255, 140, 0));
+        donateButton.setFont(new Font("Arial", Font.BOLD, 14));
+        donateButton.setFocusPainted(false);
         donateButton.addActionListener(e -> handleDonate());
-        
-        
 
-        donatePanel.add(selectLabel);
+        donatePanel.add(new JLabel("Bağış Türü:"));
         donatePanel.add(typeCombo);
-        donatePanel.add(amountLabel);
+        donatePanel.add(new JLabel("Miktar:"));
         donatePanel.add(amountField);
-        donatePanel.add(unitLabel);
+        donatePanel.add(new JLabel("Birim:"));
         donatePanel.add(unitCombo);
         donatePanel.add(donateButton);
 
-        footerPanel.add(scoreLabel, BorderLayout.WEST);
-        footerPanel.add(donatePanel, BorderLayout.CENTER);
+        // Sağ: Puan kutusu
+        JPanel scorePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        scorePanel.setBackground(new Color(245, 245, 245));
+
+        scoreValueLabel = new JLabel("🌟 0.00");
+        scoreValueLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        scoreValueLabel.setForeground(new Color(0, 120, 215));
+
+        scorePanel.add(new JLabel("Toplam Puan: "));
+        scorePanel.add(scoreValueLabel);
+
+        footerPanel.add(donatePanel, BorderLayout.WEST);
+        footerPanel.add(scorePanel, BorderLayout.EAST);
+
         add(footerPanel, BorderLayout.SOUTH);
     }
 
@@ -124,19 +223,19 @@ public class UserPanel extends JFrame {
         String t = ((String) typeCombo.getSelectedItem()).toLowerCase();
         unitCombo.removeAllItems();
         switch (t) {
-            case "mama":
+            case "mama" -> {
                 unitCombo.addItem("kg");
                 unitCombo.addItem("paket");
-                break;
-            case "su":
+            }
+            case "su" -> {
                 unitCombo.addItem("L");
                 unitCombo.addItem("şişe");
-                break;
-            case "para":
+            }
+            case "para" -> {
                 unitCombo.addItem("TRY");
                 unitCombo.addItem("USD");
                 unitCombo.addItem("EUR");
-                break;
+            }
         }
         unitCombo.setSelectedIndex(0);
     }
@@ -150,49 +249,78 @@ public class UserPanel extends JFrame {
             amount = Double.parseDouble(amountField.getText().trim());
             if (amount <= 0) throw new NumberFormatException();
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Lütfen 0'dan büyük geçerli bir miktar girin.");
+            JOptionPane.showMessageDialog(this, "Lütfen geçerli bir miktar girin.");
             return;
         }
 
         String unit = (String) unitCombo.getSelectedItem();
         if (unit == null || unit.isBlank()) {
-            JOptionPane.showMessageDialog(this, "Lütfen birim seçin.");
+            JOptionPane.showMessageDialog(this, "Lütfen bir birim seçin.");
             return;
         }
 
         boolean success = UserService.makeDonation(userId, selectedType, today, amount, unit);
         if (success) {
-            JOptionPane.showMessageDialog(this, "✅ Bağış kaydedildi!");
+            double earnedScore = calculateScore(selectedType, amount);
+            JOptionPane.showMessageDialog(this,
+                    "✅ Bağış kaydedildi!\n🎉 Tebrikler, bu bağıştan " +
+                            String.format("%.2f", earnedScore) + " puan kazandınız!");
+
             amountField.setText("");
-            refreshDonationTable();  
-            updateScoreLabel();      
+            refreshDonationTable();
+            updateScoreLabel();
         } else {
-            JOptionPane.showMessageDialog(this, "❌ Bağış kaydedilemedi!");
+            JOptionPane.showMessageDialog(this, "❌ Bağış kaydedilemedi.");
         }
+    }
+
+    private double calculateScore(String type, double amount) {
+        return switch (type.toLowerCase()) {
+            case "para" -> amount;
+            case "mama" -> amount * 0.8;
+            case "su" -> amount * 0.6;
+            default -> 0;
+        };
     }
 
     private void refreshDonationTable() {
         donationModel.setRowCount(0);
-        donationDAO dao = new donationDAO();
-        List<Donation> donations = dao.getDonationsByUserId(userId);
+        List<Donation> donations = UserService.getDonationsByUserId(userId);
+        fillTable(donations);
+    }
 
-        if (donations.isEmpty()) {
-            donationModel.addRow(new Object[]{"-", "Henüz bağış yok", "-", "-", "-"});
-        } else {
-            for (Donation d : donations) {
-                donationModel.addRow(new Object[]{
-                        d.getId(),
-                        d.getTypeName().toUpperCase(),
-                        d.getDate().toString(),
-                        String.format("%.2f", d.getAmount()),
-                        d.getUnit()
-                });
-            }
+    private void applyFilter() {
+        java.util.Date startDateRaw = (java.util.Date) startDateSpinner.getValue();
+        java.util.Date endDateRaw = (java.util.Date) endDateSpinner.getValue();
+        LocalDate startDate = LocalDate.ofInstant(startDateRaw.toInstant(), java.time.ZoneId.systemDefault());
+        LocalDate endDate = LocalDate.ofInstant(endDateRaw.toInstant(), java.time.ZoneId.systemDefault());
+
+        String type = (String) filterTypeCombo.getSelectedItem();
+
+        List<Donation> filtered = UserService.getFilteredDonations(userId, type, startDate, endDate);
+        donationModel.setRowCount(0);
+        fillTable(filtered);
+    }
+
+    private void fillTable(List<Donation> data) {
+        if (data.isEmpty()) {
+            donationModel.addRow(new Object[]{"-", "Bağış bulunamadı", "-", "-", "-"});
+            return;
+        }
+
+        for (Donation d : data) {
+            donationModel.addRow(new Object[]{
+                    d.getId(),
+                    d.getTypeName(),
+                    d.getDate().toString(),
+                    String.format("%.2f", d.getAmount()),
+                    d.getUnit()
+            });
         }
     }
 
     private void updateScoreLabel() {
-        double score = new donationDAO().getTotalScoreByUserId(userId);
-        scoreLabel.setText("🌟 Toplam Puanınız: " + String.format("%.2f", score));
+        double score = UserService.getTotalScoreByUserId(userId);
+        scoreValueLabel.setText("🌟 " + String.format("%.2f", score));
     }
 }

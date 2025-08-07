@@ -6,27 +6,26 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
+
+
 public class LoginFrame extends JFrame {
     private JTextField usernameField;
     private JPasswordField passwordField;
-    private JButton userLoginButton;
-    private JButton adminLoginButton;
+    private JButton loginButton;
     private JButton registerButton;
 
     public LoginFrame() {
-        setTitle("PatiPay Login");
+        setTitle("PatiPay Application");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(350, 400); // Biraz daha yükseklik verildi checkbox için
+        setSize(350, 400);
         setLocationRelativeTo(null);
 
-        // ✅ İç sınıf: Arka plan paneli
+        // İç sınıf: Arka plan paneli
         class BackgroundPanel extends JPanel {
             private Image backgroundImage;
-
             public BackgroundPanel(String imagePath) {
                 backgroundImage = new ImageIcon(imagePath).getImage();
             }
-
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -36,12 +35,11 @@ public class LoginFrame extends JFrame {
             }
         }
 
-        // ✅ Arka plan paneli
         BackgroundPanel mainPanel = new BackgroundPanel("src/assets/background.png");
         mainPanel.setLayout(new BorderLayout());
         setContentPane(mainPanel);
 
-        // ✅ Üst panel (logo + başlık)
+        // Üst başlık paneli
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(new Color(255, 255, 255, 180));
         headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -49,17 +47,19 @@ public class LoginFrame extends JFrame {
         ImageIcon logoIcon = new ImageIcon("src/assets/paw_logo.png");
         Image scaledImage = logoIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
         JLabel logoLabel = new JLabel(new ImageIcon(scaledImage));
+        JLabel logoLabel2 = new JLabel(new ImageIcon(scaledImage));
 
-        JLabel titleLabel = new JLabel("PatiPay Application");
+        JLabel titleLabel = new JLabel("PatiPay Login");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
         titleLabel.setForeground(new Color(51, 51, 51));
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         headerPanel.add(logoLabel, BorderLayout.WEST);
+        headerPanel.add(logoLabel2, BorderLayout.EAST);
         headerPanel.add(titleLabel, BorderLayout.CENTER);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // ✅ Orta form paneli
+        // Form paneli
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(new Color(255, 255, 255, 180));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -73,54 +73,54 @@ public class LoginFrame extends JFrame {
         usernameField = new JTextField(15);
         formPanel.add(usernameField, gbc);
 
-        // Şifre
+        // Şifre + göz ikonu
         gbc.gridx = 0; gbc.gridy = 1;
         formPanel.add(new JLabel("🔒 Şifre:"), gbc);
         gbc.gridx = 1;
+        JLayeredPane passwordLayer = new JLayeredPane();
+        passwordLayer.setPreferredSize(new Dimension(200, 30));
         passwordField = new JPasswordField(15);
-        formPanel.add(passwordField, gbc);
+        passwordField.setBounds(0, 0, 200, 30);
 
-        // ✅ Şifre Göster Checkbox
-        gbc.gridx = 1; gbc.gridy = 2;
-        JCheckBox showPassword = new JCheckBox("👀");
-        showPassword.setOpaque(false);
-        showPassword.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        showPassword.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        formPanel.add(showPassword, gbc);
-
-        showPassword.addActionListener(e -> {
-            if (showPassword.isSelected()) {
-                passwordField.setEchoChar((char) 0); // Göster
-            } else {
-                passwordField.setEchoChar('•'); // Gizle
+        JLabel eyeLabel = new JLabel("👁️");
+        eyeLabel.setBounds(175, 5, 20, 20);
+        eyeLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        eyeLabel.addMouseListener(new MouseAdapter() {
+            private boolean isVisible = false;
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                isVisible = !isVisible;
+                passwordField.setEchoChar(isVisible ? (char) 0 : '•');
             }
         });
 
-        // Kullanıcı Girişi
-        gbc.gridx = 0; gbc.gridy = 3;
-        userLoginButton = new JButton("Kullanıcı Girişi");
-        styleButton(userLoginButton, new Color(0, 120, 215));
-        formPanel.add(userLoginButton, gbc);
+        passwordLayer.add(passwordField, Integer.valueOf(1));
+        passwordLayer.add(eyeLabel, Integer.valueOf(2));
+        formPanel.add(passwordLayer, gbc);
 
-        // Yönetici Girişi
-        gbc.gridx = 1;
-        adminLoginButton = new JButton("Yönetici Girişi");
-        styleButton(adminLoginButton, new Color(0, 153, 102));
-        formPanel.add(adminLoginButton, gbc);
+        // Buton boyutu
+        Dimension buttonSize = new Dimension(200, 40);
 
-        // Kayıt Ol Butonu
-        gbc.gridx = 0; gbc.gridy = 4;
+        // Giriş Butonu
+        gbc.gridx = 0; gbc.gridy = 2;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
+        loginButton = new JButton("Giriş Yap");
+        styleButton(loginButton, new Color(0, 120, 215));
+        loginButton.setPreferredSize(buttonSize);
+        formPanel.add(loginButton, gbc);
+
+        // Kayıt Ol Butonu
+        gbc.gridy = 3;
         registerButton = new JButton("Kayıt Ol");
-        styleButton(registerButton, new Color(255, 102, 0));
+        styleButton(registerButton, new Color(0, 120, 215));
+        registerButton.setPreferredSize(buttonSize);
         formPanel.add(registerButton, gbc);
 
         mainPanel.add(formPanel, BorderLayout.CENTER);
 
-        // ✅ Butonların olayları
-        userLoginButton.addActionListener(e -> handleUserLogin());
-        adminLoginButton.addActionListener(e -> handleAdminLogin());
+        // Buton olayları
+        loginButton.addActionListener(e -> handleLogin());
         registerButton.addActionListener(e -> handleRegister());
 
         setVisible(true);
@@ -133,13 +133,14 @@ public class LoginFrame extends JFrame {
         button.setFont(new Font("Segoe UI", Font.BOLD, 13));
         button.setBorder(BorderFactory.createLineBorder(borderColor, 2));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
         button.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseEntered(MouseEvent evt) {
                 button.setBackground(borderColor);
                 button.setForeground(Color.WHITE);
             }
 
+            @Override
             public void mouseExited(MouseEvent evt) {
                 button.setBackground(Color.WHITE);
                 button.setForeground(borderColor);
@@ -152,70 +153,80 @@ public class LoginFrame extends JFrame {
         passwordField.setText("");
     }
 
-    private void handleUserLogin() {
+    private void handleLogin() {
         String username = usernameField.getText().trim();
         String password = new String(passwordField.getPassword());
 
-        if (isAdminUsername(username)) {
-            JOptionPane.showMessageDialog(this, "⚠️ Bu kullanıcı adı yönetici içindir. Lütfen 'Yönetici Girişi'ni kullanın.");
+        if (username.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Lütfen kullanıcı adı ve şifre girin.");
+            return;
+        }
+
+        String role = UserService.login(username, password);
+
+        if (role == null) {
+            JOptionPane.showMessageDialog(this, "❌ Geçersiz kullanıcı adı veya şifre.");
             temizle();
             return;
         }
 
-        int userId = UserService.login(username, password);
-        if (userId != -1) {
-            JOptionPane.showMessageDialog(this, "✅ Kullanıcı girişi başarılı!");
-            new UserPanel(userId);
-            dispose();
+        JOptionPane.showMessageDialog(this, "✅ Giriş başarılı!");
+
+        if (role.equals("admin")) {
+            new AdminPanel().setVisible(true);
         } else {
-            JOptionPane.showMessageDialog(this, "❌ Kullanıcı bilgileri hatalı!");
-        }
-        temizle();
-    }
-
-    private void handleAdminLogin() {
-        String username = usernameField.getText().trim();
-        String password = new String(passwordField.getPassword());
-
-        if (!isAdminUsername(username)) {
-            JOptionPane.showMessageDialog(this, "⚠️ Bu bölüm yalnızca yöneticiler içindir.");
-            temizle();
-            return;
+            int userId = UserService.getUserId(username);
+            new UserPanel(userId).setVisible(true);
         }
 
-        if (AdminService.login(username, password)) {
-            JOptionPane.showMessageDialog(this, "✅ Yönetici girişi başarılı!");
-            new AdminPanel();
-            dispose();
-        } else {
-            JOptionPane.showMessageDialog(this, "❌ Yönetici bilgileri hatalı!");
-        }
-        temizle();
+        dispose();
     }
 
     private void handleRegister() {
         String username = usernameField.getText().trim();
         String password = new String(passwordField.getPassword());
 
-        if (isAdminUsername(username)) {
-            JOptionPane.showMessageDialog(this, "⚠️ Bu yönetici kullanıcı adıdır. Yönetici kayıt olamaz; yalnızca 'Yönetici Girişi' yapılabilir.");
-            temizle();
-            return;
-        }
         if (username.isEmpty() || password.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Lütfen kullanıcı adı ve şifre girin.");
             return;
         }
 
-        if (UserService.register(username, password)) {
+        // ❗ Şifre sadece rakam olmalı
+        if (!password.matches("\\d+")) {
+            JOptionPane.showMessageDialog(this, "❌ Şifre sadece rakamlardan oluşmalıdır.");
+            temizle();
+            return;
+        }
+
+        // Rol seçimi
+        String[] roles = {"user", "admin"};
+        String role = (String) JOptionPane.showInputDialog(
+                this,
+                "Kullanıcı rolünü seçin:",
+                "Rol Seçimi",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                roles,
+                roles[0]
+        );
+
+        if (role == null) return;
+
+        boolean success = UserService.register(username, password, role);
+
+        if (success) {
             JOptionPane.showMessageDialog(this, "✅ Kayıt başarılı!");
+            if (role.equals("admin")) {
+                new AdminPanel().setVisible(true);
+            } else {
+                int userId = UserService.getUserId(username);
+                new UserPanel(userId).setVisible(true);
+            }
+            dispose();
         } else {
             JOptionPane.showMessageDialog(this, "❌ Bu kullanıcı adı zaten var.");
         }
-        temizle();
-    }
 
-    private boolean isAdminUsername(String username) {
-        return "admin".equalsIgnoreCase(username);
+        temizle();
     }
 }

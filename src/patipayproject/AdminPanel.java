@@ -13,6 +13,7 @@ import java.time.*;
 import java.util.*;
 import java.util.List;
 
+
 public class AdminPanel extends JFrame {
 
     private JTextField usernameField;
@@ -34,7 +35,6 @@ public class AdminPanel extends JFrame {
         buildTable();
         buildButtonsBar();
 
-        
         applyFilters("date DESC");
 
         setVisible(true);
@@ -107,6 +107,8 @@ public class AdminPanel extends JFrame {
         JButton summaryBtn      = new JButton("Özet (Adet/Toplam)");
         JButton typeBreakBtn    = new JButton("Tür Bazlı Özet");
         JButton exportBtn       = new JButton("CSV Dışa Aktar");
+        JButton topDonorsBtn    = new JButton("En Çok Bağış Yapanlar");
+        JButton exitBtn         = new JButton("Çıkış");
 
         sortDateAscBtn.addActionListener(e -> applyFilters("d.date ASC, d.id ASC"));
         sortDateDescBtn.addActionListener(e -> applyFilters("d.date DESC, d.id DESC"));
@@ -117,11 +119,8 @@ public class AdminPanel extends JFrame {
             String type = (String) typeCombo.getSelectedItem();
             if ("Hepsi".equalsIgnoreCase(type)) type = null;
 
-            Date startUtil = (Date) startDateSpinner.getValue();
-            Date endUtil = (Date) endDateSpinner.getValue();
-
-            LocalDate start = startUtil == null ? null : Instant.ofEpochMilli(startUtil.getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
-            LocalDate end = endUtil == null ? null : Instant.ofEpochMilli(endUtil.getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate start = convertDateToLocalDate((Date) startDateSpinner.getValue());
+            LocalDate end = convertDateToLocalDate((Date) endDateSpinner.getValue());
 
             donationDAO dao = new donationDAO();
             Map<String, Object> sum = dao.getSummaryWithFilters(
@@ -131,8 +130,8 @@ public class AdminPanel extends JFrame {
                     end
             );
 
-            int count = (int) sum.get("count");
-            double total = (double) sum.get("total");
+            int count = (int) sum.getOrDefault("count", 0);
+            double total = (double) sum.getOrDefault("total", 0.0);
 
             fillTableWithSummary(count, total);
         });
@@ -140,11 +139,8 @@ public class AdminPanel extends JFrame {
         typeBreakBtn.addActionListener(e -> {
             String username = usernameField.getText().trim();
 
-            Date startUtil = (Date) startDateSpinner.getValue();
-            Date endUtil = (Date) endDateSpinner.getValue();
-
-            LocalDate start = startUtil == null ? null : Instant.ofEpochMilli(startUtil.getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
-            LocalDate end = endUtil == null ? null : Instant.ofEpochMilli(endUtil.getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate start = convertDateToLocalDate((Date) startDateSpinner.getValue());
+            LocalDate end = convertDateToLocalDate((Date) endDateSpinner.getValue());
 
             donationDAO dao = new donationDAO();
             List<Map<String, Object>> rows = dao.getTypeBreakdown(
@@ -158,23 +154,17 @@ public class AdminPanel extends JFrame {
 
             fillTableWithTypeSummary(rows);
         });
-        
-       JButton topDonorsBtn = new JButton("En Çok Bağış Yapanlar");
-       topDonorsBtn.addActionListener(e -> {
-       List<String> topDonors = donationDAO.getTopDonorsByScore();
-       String message = String.join("\n", topDonors);
-       JOptionPane.showMessageDialog(this, "En Çok Bağış Yapan 3 Kişi:\n" + message);
-       });
 
+        topDonorsBtn.addActionListener(e -> {
+            List<String> topDonors = donationDAO.getTopDonorsByScore();
+            String message = String.join("\n", topDonors);
+            JOptionPane.showMessageDialog(this, "En Çok Bağış Yapan 3 Kişi:\n" + message);
+        });
 
-       JButton exitBtn = new JButton("Exıt");
-       exitBtn.addActionListener(e -> {
-       dispose();
-       System.exit(0); 
-      });
-
-
-        exportBtn.addActionListener(e -> exportTableToCsv());
+        exitBtn.addActionListener(e -> {
+            dispose();
+            System.exit(0);
+        });
 
         bar.add(sortDateAscBtn);
         bar.add(sortDateDescBtn);
@@ -185,6 +175,8 @@ public class AdminPanel extends JFrame {
         bar.add(topDonorsBtn);
         bar.add(exitBtn);
         add(bar, BorderLayout.SOUTH);
+
+        exportBtn.addActionListener(e -> exportTableToCsv());
     }
 
     private void applyFilters(String orderByOrNull) {
@@ -192,11 +184,8 @@ public class AdminPanel extends JFrame {
         String type = (String) typeCombo.getSelectedItem();
         if ("Hepsi".equalsIgnoreCase(type)) type = null;
 
-        Date startUtil = (Date) startDateSpinner.getValue();
-        Date endUtil = (Date) endDateSpinner.getValue();
-
-        LocalDate start = startUtil == null ? null : Instant.ofEpochMilli(startUtil.getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate end = endUtil == null ? null : Instant.ofEpochMilli(endUtil.getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate start = convertDateToLocalDate((Date) startDateSpinner.getValue());
+        LocalDate end = convertDateToLocalDate((Date) endDateSpinner.getValue());
 
         donationDAO dao = new donationDAO();
         List<Donation> list = dao.getDonationsWithFilters(
@@ -223,77 +212,92 @@ public class AdminPanel extends JFrame {
         }
     }
 
-    private void fillTable(List<Donation> data) {
-        String[] cols = {"ID", "Kullanıcı Adı", "Tür", "Tarih", "Miktar", "Birim"};
-        model.setColumnIdentifiers(cols);
 
-        model.setRowCount(0);
-        for (Donation d : data) {
-            model.addRow(new Object[]{
-                    d.getId(),
-                    d.getUsername(),
-                    d.getTypeName().toUpperCase(),
-                    d.getDate().toString(),
-                    String.format("%.2f", d.getAmount()),
-                    d.getUnit()
-            });
-        }
+   private void fillTable(List<Donation> data) {
+    String[] cols = {"ID", "Kullanıcı Adı", "Tür", "Tarih", "Miktar", "Birim"};
+    model.setColumnIdentifiers(cols);
+
+    model.setRowCount(0);
+    for (Donation d : data) {
+        model.addRow(new Object[]{
+                d.getId(),
+                d.getUsername(),
+                d.getTypeName().toUpperCase(),
+                d.getDate().toString(),
+                String.format("%.2f", d.getAmount()),
+                d.getUnit()
+        });
     }
-
-    private void fillTableWithSummary(int count, double total) {
-        String[] cols = {"Toplam Bağış Adedi", "Toplam Miktar"};
-        model.setColumnIdentifiers(cols);
-        model.setRowCount(0);
-        model.addRow(new Object[]{count, String.format("%.2f", total)});
+}
+   
+   private LocalDate convertDateToLocalDate(Date date) {
+    if (date == null) return null;
+    if (date instanceof java.sql.Date) {
+        return ((java.sql.Date) date).toLocalDate();
     }
+    return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+}
 
-    private void fillTableWithTypeSummary(List<Map<String, Object>> summaryData) {
-        String[] cols = {"Tür", "Adet", "Toplam Miktar"};
-        model.setColumnIdentifiers(cols);
-        model.setRowCount(0);
+private void fillTableWithSummary(int count, double total) {
+    String[] cols = {"Adet", "Toplam Miktar"};
+    model.setColumnIdentifiers(cols);
 
-        for (Map<String, Object> row : summaryData) {
-            String type = String.valueOf(row.get("type")).toUpperCase();
-            int count = (int) row.get("count");
-            double total = (double) row.get("total");
-            model.addRow(new Object[]{type, count, String.format("%.2f", total)});
-        }
-    }
+    model.setRowCount(0);
+    model.addRow(new Object[]{count, total});
+}
 
-    private void exportTableToCsv() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("CSV olarak kaydet");
-        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File file = chooser.getSelectedFile();
-            if (!file.getName().toLowerCase().endsWith(".csv")) {
-                file = new File(file.getParentFile(), file.getName() + ".csv");
+private void exportTableToCsv() {
+    JFileChooser fileChooser = new JFileChooser();
+    fileChooser.setDialogTitle("CSV olarak kaydet");
+
+    int userSelection = fileChooser.showSaveDialog(this);
+    if (userSelection == JFileChooser.APPROVE_OPTION) {
+        File fileToSave = fileChooser.getSelectedFile();
+
+        try (PrintWriter pw = new PrintWriter(fileToSave, StandardCharsets.UTF_8)) {
+            // Başlık satırı
+            for (int col = 0; col < model.getColumnCount(); col++) {
+                pw.print(model.getColumnName(col));
+                if (col < model.getColumnCount() - 1) pw.print(",");
             }
-            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
-              
-                for (int c = 0; c < table.getColumnCount(); c++) {
-                    pw.print(table.getColumnName(c));
-                    if (c < table.getColumnCount() - 1) pw.print(",");
+            pw.println();
+
+            // Satırlar
+            for (int row = 0; row < model.getRowCount(); row++) {
+                for (int col = 0; col < model.getColumnCount(); col++) {
+                    Object cellValue = model.getValueAt(row, col);
+                    String cellText = cellValue == null ? "" : cellValue.toString();
+
+                    // Eğer hücrede virgül varsa, tırnak içine al
+                    if (cellText.contains(",")) {
+                        cellText = "\"" + cellText + "\"";
+                    }
+                    pw.print(cellText);
+
+                    if (col < model.getColumnCount() - 1) pw.print(",");
                 }
                 pw.println();
-              
-                for (int r = 0; r < table.getRowCount(); r++) {
-                    for (int c = 0; c < table.getColumnCount(); c++) {
-                        Object val = table.getValueAt(r, c);
-                        String cell = val == null ? "" : val.toString().replace("\"", "\"\"");
-                        if (cell.contains(",") || cell.contains("\"")) {
-                            pw.print("\"" + cell + "\"");
-                        } else {
-                            pw.print(cell);
-                        }
-                        if (c < table.getColumnCount() - 1) pw.print(",");
-                    }
-                    pw.println();
-                }
-                JOptionPane.showMessageDialog(this, "CSV kaydedildi: " + file.getName());
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Dosya yazma hatası: " + ex.getMessage());
             }
+
+            JOptionPane.showMessageDialog(this, "CSV başarıyla kaydedildi.");
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "CSV kaydedilirken hata oluştu: " + e.getMessage());
         }
     }
+}
+private void fillTableWithTypeSummary(List<Map<String, Object>> rows) {
+    String[] cols = {"Tür", "Adet", "Toplam Miktar"};
+    model.setColumnIdentifiers(cols);
+
+    model.setRowCount(0);
+    for (Map<String, Object> row : rows) {
+        model.addRow(new Object[]{
+            ((String) row.get("type")).toUpperCase(),
+            row.get("count"),
+            String.format("%.2f", row.get("total"))
+        });
+    }
+}
+
 
 }

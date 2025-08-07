@@ -22,6 +22,7 @@ public class Donation {
         this.amount=amount;
         this.unit=unit;
     }
+  
 
     public Donation(int userId, DonationType type, LocalDate date, double amount, String unit) {
         this(0, userId, type, date, amount, unit);
