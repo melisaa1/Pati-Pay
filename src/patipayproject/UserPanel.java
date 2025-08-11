@@ -85,10 +85,10 @@ public class UserPanel extends JFrame {
 
         // Profil resmi yuvarlak ve mouse hover border efekti
         BufferedImage defaultImg = loadImage("src/assets/pic1.png"); // farklı profil resmi
-        Image circleImage = defaultImg != null ? makeRoundedCorner(defaultImg, 50) : null;
+        Image circleImage = defaultImg != null ? makeRoundedCorner(defaultImg, 70) : null;
         profilePicLabel = new JLabel(circleImage != null ? new ImageIcon(circleImage) : new JLabel("Foto yok").getIcon());
         profilePicLabel.setToolTipText("Profil fotoğrafını değiştir");
-        profilePicLabel.setPreferredSize(new Dimension(50, 50));
+        profilePicLabel.setPreferredSize(new Dimension(80, 80));
         profilePicLabel.setOpaque(false);
         profilePicLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
         profilePicLabel.addMouseListener(new MouseAdapter() {
@@ -122,7 +122,7 @@ public class UserPanel extends JFrame {
         exitButton.setForeground(new Color(150, 0, 0));
         exitButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         exitButton.setFocusPainted(false);
-        exitButton.setPreferredSize(new Dimension(30, 30));
+        exitButton.setPreferredSize(new Dimension(20, 20));
         exitButton.setToolTipText("Çıkış yap");
         exitButton.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
         exitButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -165,7 +165,7 @@ public class UserPanel extends JFrame {
                 imgButton.setFocusPainted(false);
                 imgButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
                 imgButton.addActionListener(e -> {
-                    BufferedImage rounded = makeRoundedCorner(img, 50);
+                    BufferedImage rounded = makeRoundedCorner(img, 70);
                     profilePicLabel.setIcon(new ImageIcon(rounded));
                     SwingUtilities.getWindowAncestor(panel).dispose();
                 });
@@ -269,7 +269,7 @@ public class UserPanel extends JFrame {
         JButton donateButton = new JButton("Bağış Yap");
         donateButton.setPreferredSize(new Dimension(110, 35));
         donateButton.setBackground(new Color(0, 120, 215));
-        donateButton.setForeground(Color.WHITE);
+        donateButton.setForeground(Color.BLACK);
         donateButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         donateButton.setFocusPainted(false);
         donateButton.setCursor(new Cursor(Cursor.HAND_CURSOR));

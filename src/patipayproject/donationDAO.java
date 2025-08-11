@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 public class donationDAO {
 
-    // Bağış Ekle
     public void addDonation(Donation donation) {
         String sql = "INSERT INTO Donation(user_id, type, date, amount, unit) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DBconnection.connect();
@@ -39,7 +38,6 @@ public class donationDAO {
         }
     }
 
-    // Kullanıcıya ait bağışlar
     public List<Donation> getDonationsByUserId(int userId) {
         List<Donation> donations = new ArrayList<>();
         String sql = "SELECT id, user_id, type, date, amount, unit FROM Donation WHERE user_id = ? ORDER BY date DESC, id ASC";
@@ -65,7 +63,6 @@ public class donationDAO {
         return donations;
     }
 
-    // Tüm bağışlar
     public List<Donation> getAllDonations() {
         List<Donation> donations = new ArrayList<>();
         String sql = "SELECT id, user_id, type, date, amount, unit FROM Donation ORDER BY date DESC, id ASC";
@@ -91,13 +88,12 @@ public class donationDAO {
         return donations;
     }
 
-    // Filtreli bağış getirme (username, tür, tarih aralığı)
     public List<Donation> getDonationsWithFilters(
             String usernameFilter,
             String typeFilter,
             LocalDate startDate,
             LocalDate endDate,
-            String orderBy // Örn: "date DESC" veya "amount ASC"
+            String orderBy 
     ) {
         List<Donation> donations = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
@@ -155,7 +151,6 @@ public class donationDAO {
         return donations;
     }
 
-    // Ayın bağışçısı
     public Optional<Map.Entry<Integer, Integer>> getTopDonorOfMonth() {
         String sql = "SELECT user_id, COUNT(*) as total FROM Donation " +
                 "WHERE strftime('%Y-%m', date) = strftime('%Y-%m', 'now') " +
@@ -177,7 +172,6 @@ public class donationDAO {
         return Optional.empty();
     }
 
-    // Puan hesaplama - kullanıcıya özel
     public static double getTotalScoreByUserId(int userId) {
         final double paraPuan = 1;
         final double mamaPuan = 0.8;
@@ -210,7 +204,6 @@ public class donationDAO {
         return totalScore;
     }
 
-    // En yüksek puanlı bağışçılar
     public static List<String> getTopDonorsByScore() {
         final double paraPuan = 1;
         final double mamaPuan = 0.8;
@@ -251,7 +244,6 @@ public class donationDAO {
                 .collect(Collectors.toList());
     }
 
-    // Özet bilgileri filtreli al (sayısı ve toplam miktarı)
     public Map<String, Object> getSummaryWithFilters(
             String usernameOrNull,
             String typeOrNull,
@@ -305,7 +297,6 @@ public class donationDAO {
         return empty;
     }
 
-    // Tür bazlı özet (kullanıcı + tarih filtreli)
     public List<Map<String, Object>> getTypeBreakdown(
             String usernameOrNull,
             LocalDate startOrNull,

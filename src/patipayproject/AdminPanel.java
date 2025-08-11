@@ -2,17 +2,15 @@
 package patipayproject;
 
 
-
 import javax.swing.*;
 import javax.swing.table.*;
-import javax.swing.SortOrder;
 import java.awt.*;
+import java.awt.event.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.util.*;
 import java.util.List;
-
 
 public class AdminPanel extends JFrame {
 
@@ -25,22 +23,39 @@ public class AdminPanel extends JFrame {
     private DefaultTableModel model;
 
     public AdminPanel() {
-        setTitle("Yönetici Paneli");
-        setSize(1050, 600);
+        setTitle("🐾 PatiPay - Yönetici Paneli 🐾");
+        setSize(1050, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout(10,10));
+        setLayout(new BorderLayout(10, 10));
         setLocationRelativeTo(null);
 
-        buildFilterBar();
-        buildTable();
-        buildButtonsBar();
+        // Üst panel: Hoşgeldin yazısı ve sağ üstte çıkış butonu
+        JPanel topPanel = new JPanel(new BorderLayout());
+        
+        JLabel welcomeLabel = new JLabel("Hoş geldin Admin 👋", SwingConstants.CENTER);
+        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        welcomeLabel.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
+        welcomeLabel.setForeground(new Color(0, 120, 215));
+
+        topPanel.add(welcomeLabel, BorderLayout.CENTER);
+        topPanel.add(buildExitButtonPanel(), BorderLayout.EAST);
+        add(topPanel, BorderLayout.NORTH);
+
+        // Orta bölüm: filtre çubuğu + tablo
+        JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
+        centerPanel.add(buildFilterBar(), BorderLayout.NORTH);
+        centerPanel.add(buildTable(), BorderLayout.CENTER);
+        add(centerPanel, BorderLayout.CENTER);
+
+        // Alt bölüm: buton çubuğu
+        add(buildButtonsBar(), BorderLayout.SOUTH);
 
         applyFilters("date DESC");
 
         setVisible(true);
     }
 
-    private void buildFilterBar() {
+    private JPanel buildFilterBar() {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
         p.add(new JLabel("Kullanıcı adı:"));
@@ -71,6 +86,10 @@ public class AdminPanel extends JFrame {
         JButton applyBtn = new JButton("Filtrele");
         JButton resetBtn = new JButton("Sıfırla");
 
+        Color blue = new Color(0, 120, 215);
+        styleButton(applyBtn, blue);
+        styleButton(resetBtn, blue);
+
         applyBtn.addActionListener(e -> applyFilters(null));
         resetBtn.addActionListener(e -> {
             usernameField.setText("");
@@ -83,23 +102,25 @@ public class AdminPanel extends JFrame {
         p.add(applyBtn);
         p.add(resetBtn);
 
-        add(p, BorderLayout.NORTH);
+        return p;
     }
 
-    private void buildTable() {
+    private JScrollPane buildTable() {
         String[] columns = {"ID", "Kullanıcı Adı", "Tür", "Tarih", "Miktar", "Birim"};
         model = new DefaultTableModel(columns, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         table = new JTable(model);
         table.setAutoCreateRowSorter(true);
-
-        JScrollPane pane = new JScrollPane(table);
-        add(pane, BorderLayout.CENTER);
+        return new JScrollPane(table);
     }
 
-    private void buildButtonsBar() {
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    private JPanel buildButtonsBar() {
+        JPanel bar = new JPanel();
+        bar.setLayout(new BoxLayout(bar, BoxLayout.X_AXIS));
+        bar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // kenar boşluğu
+
+        Color defaultBtnColor = new Color(0, 120, 215);
 
         JButton sortDateAscBtn  = new JButton("Tarih ↑");
         JButton sortDateDescBtn = new JButton("Tarih ↓");
@@ -108,8 +129,16 @@ public class AdminPanel extends JFrame {
         JButton typeBreakBtn    = new JButton("Tür Bazlı Özet");
         JButton exportBtn       = new JButton("CSV Dışa Aktar");
         JButton topDonorsBtn    = new JButton("En Çok Bağış Yapanlar");
-        JButton exitBtn         = new JButton("Çıkış");
 
+        styleButton(sortDateAscBtn, defaultBtnColor);
+        styleButton(sortDateDescBtn, defaultBtnColor);
+        styleButton(sortTypeBtn, defaultBtnColor);
+        styleButton(summaryBtn, defaultBtnColor);
+        styleButton(typeBreakBtn, defaultBtnColor);
+        styleButton(exportBtn, defaultBtnColor);
+        styleButton(topDonorsBtn, defaultBtnColor);
+
+        // ActionListener ekle
         sortDateAscBtn.addActionListener(e -> applyFilters("d.date ASC, d.id ASC"));
         sortDateDescBtn.addActionListener(e -> applyFilters("d.date DESC, d.id DESC"));
         sortTypeBtn.addActionListener(e -> applyFilters("type ASC, date DESC"));
@@ -155,28 +184,71 @@ public class AdminPanel extends JFrame {
             fillTableWithTypeSummary(rows);
         });
 
+        exportBtn.addActionListener(e -> exportTableToCsv());
+
         topDonorsBtn.addActionListener(e -> {
             List<String> topDonors = donationDAO.getTopDonorsByScore();
             String message = String.join("\n", topDonors);
             JOptionPane.showMessageDialog(this, "En Çok Bağış Yapan 3 Kişi:\n" + message);
         });
 
-        exitBtn.addActionListener(e -> {
-            dispose();
-            System.exit(0);
+        // Butonları sırayla ekle, aralarına istediğin kadar boşluk bırakabilirsin (burada 32px)
+        JButton[] buttons = {
+            sortDateAscBtn,
+            sortDateDescBtn,
+            sortTypeBtn,
+            summaryBtn,
+            typeBreakBtn,
+            exportBtn,
+            topDonorsBtn
+        };
+
+        for (int i = 0; i < buttons.length; i++) {
+            bar.add(buttons[i]);
+            if (i < buttons.length - 1) {
+                bar.add(Box.createRigidArea(new Dimension(32, 0)));
+            }
+        }
+
+        return bar;
+    }
+
+    private JPanel buildExitButtonPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 8));
+
+        JButton exitBtn = new JButton("✖");
+        Color redExit = new Color(180, 0, 0);
+
+        exitBtn.setBackground(Color.WHITE);
+        exitBtn.setForeground(redExit);
+        exitBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        exitBtn.setFocusPainted(false);
+        exitBtn.setBorder(BorderFactory.createLineBorder(redExit, 2));
+        exitBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        exitBtn.setPreferredSize(new Dimension(45, 30));
+
+        exitBtn.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) {
+                exitBtn.setBackground(redExit);
+                exitBtn.setForeground(Color.WHITE);
+            }
+            @Override public void mouseExited(MouseEvent e) {
+                exitBtn.setBackground(Color.WHITE);
+                exitBtn.setForeground(redExit);
+            }
         });
 
-        bar.add(sortDateAscBtn);
-        bar.add(sortDateDescBtn);
-        bar.add(sortTypeBtn);
-        bar.add(summaryBtn);
-        bar.add(typeBreakBtn);
-        bar.add(exportBtn);
-        bar.add(topDonorsBtn);
-        bar.add(exitBtn);
-        add(bar, BorderLayout.SOUTH);
+        exitBtn.addActionListener(e -> {
+            int onay = JOptionPane.showConfirmDialog(this, "Uygulamadan çıkmak istiyor musunuz?", "Çıkış", JOptionPane.YES_NO_OPTION);
+            if (onay == JOptionPane.YES_OPTION) {
+                dispose();
+                System.exit(0);
+            }
+        });
 
-        exportBtn.addActionListener(e -> exportTableToCsv());
+        panel.add(exitBtn);
+
+        return panel;
     }
 
     private void applyFilters(String orderByOrNull) {
@@ -202,102 +274,109 @@ public class AdminPanel extends JFrame {
             TableRowSorter<TableModel> sorter = (TableRowSorter<TableModel>) table.getRowSorter();
             List<RowSorter.SortKey> keys = new ArrayList<>();
             if (orderByOrNull.toLowerCase().startsWith("date asc")) {
-                keys.add(new RowSorter.SortKey(3, SortOrder.ASCENDING));  // Tarih sütunu
+                keys.add(new RowSorter.SortKey(3, SortOrder.ASCENDING));
             } else if (orderByOrNull.toLowerCase().startsWith("date desc")) {
                 keys.add(new RowSorter.SortKey(3, SortOrder.DESCENDING));
             } else if (orderByOrNull.toLowerCase().startsWith("type")) {
-                keys.add(new RowSorter.SortKey(2, SortOrder.ASCENDING));  // Tür sütunu
+                keys.add(new RowSorter.SortKey(2, SortOrder.ASCENDING));
             }
             sorter.setSortKeys(keys);
         }
     }
 
-
-   private void fillTable(List<Donation> data) {
-    String[] cols = {"ID", "Kullanıcı Adı", "Tür", "Tarih", "Miktar", "Birim"};
-    model.setColumnIdentifiers(cols);
-
-    model.setRowCount(0);
-    for (Donation d : data) {
-        model.addRow(new Object[]{
-                d.getId(),
-                d.getUsername(),
-                d.getTypeName().toUpperCase(),
-                d.getDate().toString(),
-                String.format("%.2f", d.getAmount()),
-                d.getUnit()
-        });
+    private void fillTable(List<Donation> data) {
+        String[] cols = {"ID", "Kullanıcı Adı", "Tür", "Tarih", "Miktar", "Birim"};
+        model.setColumnIdentifiers(cols);
+        model.setRowCount(0);
+        for (Donation d : data) {
+            model.addRow(new Object[]{
+                    d.getId(),
+                    d.getUsername(),
+                    d.getTypeName().toUpperCase(),
+                    d.getDate().toString(),
+                    String.format("%.2f", d.getAmount()),
+                    d.getUnit()
+            });
+        }
     }
-}
-   
-   private LocalDate convertDateToLocalDate(Date date) {
-    if (date == null) return null;
-    if (date instanceof java.sql.Date) {
-        return ((java.sql.Date) date).toLocalDate();
+
+    private LocalDate convertDateToLocalDate(Date date) {
+        if (date == null) return null;
+        if (date instanceof java.sql.Date) {
+            return ((java.sql.Date) date).toLocalDate();
+        }
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
-    return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-}
 
-private void fillTableWithSummary(int count, double total) {
-    String[] cols = {"Adet", "Toplam Miktar"};
-    model.setColumnIdentifiers(cols);
+    private void fillTableWithSummary(int count, double total) {
+        String[] cols = {"Adet", "Toplam Miktar"};
+        model.setColumnIdentifiers(cols);
+        model.setRowCount(0);
+        model.addRow(new Object[]{count, total});
+    }
 
-    model.setRowCount(0);
-    model.addRow(new Object[]{count, total});
-}
+    private void exportTableToCsv() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("CSV olarak kaydet");
 
-private void exportTableToCsv() {
-    JFileChooser fileChooser = new JFileChooser();
-    fileChooser.setDialogTitle("CSV olarak kaydet");
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
 
-    int userSelection = fileChooser.showSaveDialog(this);
-    if (userSelection == JFileChooser.APPROVE_OPTION) {
-        File fileToSave = fileChooser.getSelectedFile();
-
-        try (PrintWriter pw = new PrintWriter(fileToSave, StandardCharsets.UTF_8)) {
-            // Başlık satırı
-            for (int col = 0; col < model.getColumnCount(); col++) {
-                pw.print(model.getColumnName(col));
-                if (col < model.getColumnCount() - 1) pw.print(",");
-            }
-            pw.println();
-
-            // Satırlar
-            for (int row = 0; row < model.getRowCount(); row++) {
+            try (PrintWriter pw = new PrintWriter(fileToSave, StandardCharsets.UTF_8)) {
                 for (int col = 0; col < model.getColumnCount(); col++) {
-                    Object cellValue = model.getValueAt(row, col);
-                    String cellText = cellValue == null ? "" : cellValue.toString();
-
-                    // Eğer hücrede virgül varsa, tırnak içine al
-                    if (cellText.contains(",")) {
-                        cellText = "\"" + cellText + "\"";
-                    }
-                    pw.print(cellText);
-
+                    pw.print(model.getColumnName(col));
                     if (col < model.getColumnCount() - 1) pw.print(",");
                 }
                 pw.println();
-            }
 
-            JOptionPane.showMessageDialog(this, "CSV başarıyla kaydedildi.");
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "CSV kaydedilirken hata oluştu: " + e.getMessage());
+                for (int row = 0; row < model.getRowCount(); row++) {
+                    for (int col = 0; col < model.getColumnCount(); col++) {
+                        Object cellValue = model.getValueAt(row, col);
+                        String cellText = cellValue == null ? "" : cellValue.toString();
+                        if (cellText.contains(",")) cellText = "\"" + cellText + "\"";
+                        pw.print(cellText);
+                        if (col < model.getColumnCount() - 1) pw.print(",");
+                    }
+                    pw.println();
+                }
+
+                JOptionPane.showMessageDialog(this, "CSV başarıyla kaydedildi.");
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "CSV kaydedilirken hata oluştu: " + e.getMessage());
+            }
         }
     }
-}
-private void fillTableWithTypeSummary(List<Map<String, Object>> rows) {
-    String[] cols = {"Tür", "Adet", "Toplam Miktar"};
-    model.setColumnIdentifiers(cols);
 
-    model.setRowCount(0);
-    for (Map<String, Object> row : rows) {
-        model.addRow(new Object[]{
-            ((String) row.get("type")).toUpperCase(),
-            row.get("count"),
-            String.format("%.2f", row.get("total"))
+    private void fillTableWithTypeSummary(List<Map<String, Object>> rows) {
+        String[] cols = {"Tür", "Adet", "Toplam Miktar"};
+        model.setColumnIdentifiers(cols);
+        model.setRowCount(0);
+        for (Map<String, Object> row : rows) {
+            model.addRow(new Object[]{
+                    ((String) row.get("type")).toUpperCase(),
+                    row.get("count"),
+                    String.format("%.2f", row.get("total"))
+            });
+        }
+    }
+
+    private void styleButton(JButton button, Color borderColor) {
+        button.setFocusPainted(false);
+        button.setBackground(Color.WHITE);
+        button.setForeground(borderColor);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        button.setBorder(BorderFactory.createLineBorder(borderColor, 2));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent evt) {
+                button.setBackground(borderColor);
+                button.setForeground(Color.WHITE);
+            }
+            @Override public void mouseExited(MouseEvent evt) {
+                button.setBackground(Color.WHITE);
+                button.setForeground(borderColor);
+            }
         });
     }
-}
-
-
 }

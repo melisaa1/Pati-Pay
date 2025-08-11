@@ -57,7 +57,6 @@ public class UserService {
         }
     }
 
-    // Bağış yap (puan hesaplama basit: miktar puan olarak sayılıyor)
     public static boolean makeDonation(int userId, String type, LocalDate date, double amount, String unit) {
         String sql = "INSERT INTO Donation(user_id, type, date, amount, unit) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DBconnection.connect();
@@ -107,24 +106,33 @@ public class UserService {
     }
 
     public static double getTotalScoreByUserId(int userId) {
-        double totalScore = 0;
-        String sql = "SELECT SUM(amount) as total FROM Donation WHERE user_id = ?";
+    double totalScore = 0;
+    String sql = "SELECT type, amount FROM Donation WHERE user_id = ?";
 
-        try (Connection conn = DBconnection.connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+    try (Connection conn = DBconnection.connect();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setInt(1, userId);
-            ResultSet rs = pstmt.executeQuery();
+        pstmt.setInt(1, userId);
+        ResultSet rs = pstmt.executeQuery();
 
-            if (rs.next()) {
-                totalScore = rs.getDouble("total");
+        while (rs.next()) {
+            String type = rs.getString("type").toLowerCase();
+            double amount = rs.getDouble("amount");
+
+            switch (type) {
+                case "para" -> totalScore += amount;
+                case "mama" -> totalScore += amount * 0.8;
+                case "su"   -> totalScore += amount * 0.6;
+                default     -> totalScore += amount;
             }
-
-        } catch (SQLException e) {
-            System.out.println("❌ Toplam puan alınamadı: " + e.getMessage());
         }
-        return totalScore;
+
+    } catch (SQLException e) {
+        System.out.println("❌ Toplam puan alınamadı: " + e.getMessage());
     }
+    return totalScore;
+}
+
 
     public static String getUsernameById(int userId) {
         String sql = "SELECT username FROM User WHERE id = ?";
@@ -165,12 +173,8 @@ public class UserService {
     private static donationDAO donationDao = new donationDAO();
 
     public static List<Donation> getFilteredDonations(int userId, String typeFilter, LocalDate startDate, LocalDate endDate) {
-        // Eğer "Tümü" seçildiyse filtre türünü boş yap
         String type = (typeFilter != null && !typeFilter.equalsIgnoreCase("Tümü")) ? typeFilter : null;
 
-        // donationDAO'da username yerine userId bazlı bir filtreleme yapılacak şekilde getDonationsWithFilters metodunu kullanabiliriz.
-        // Eğer böyle bir metod yoksa donationDAO'da aşağıdaki gibi bir metod oluşturmalısın.
-        
         return donationDao.getDonationsWithFiltersByUserId(userId, type, startDate, endDate);
     }
 }
