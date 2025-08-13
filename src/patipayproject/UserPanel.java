@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 
-
 public class UserPanel extends JFrame {
     private final int userId;
     private JTable donationTable;
@@ -38,8 +37,7 @@ public class UserPanel extends JFrame {
         setLayout(new BorderLayout(10, 10));
         setLocationRelativeTo(null);
 
-        // Arka plan paneli (LoginFrame gibi değil, sade açık renk)
-        BackgroundPanel backgroundPanel = new BackgroundPanel("src/assets/userpanel_bg.png"); // farklı arka plan
+        BackgroundPanel backgroundPanel = new BackgroundPanel("src/assets/userpanel_bg.png");
         backgroundPanel.setLayout(new BorderLayout(15, 15));
         setContentPane(backgroundPanel);
 
@@ -53,7 +51,6 @@ public class UserPanel extends JFrame {
         setVisible(true);
     }
 
-    // Kullanıcı paneline özgü farklı arka plan sınıfı (LoginFrame’den farklı)
     private static class BackgroundPanel extends JPanel {
         private Image backgroundImage;
         public BackgroundPanel(String imagePath) {
@@ -67,7 +64,6 @@ public class UserPanel extends JFrame {
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             if (backgroundImage != null) {
-                // Kenar boşlukları bırakıp resmi ortala
                 int imgWidth = backgroundImage.getWidth(this);
                 int imgHeight = backgroundImage.getHeight(this);
                 int x = (getWidth() - imgWidth) / 2;
@@ -81,10 +77,9 @@ public class UserPanel extends JFrame {
         String username = UserService.getUsernameById(userId);
 
         JPanel headerPanel = new JPanel(new BorderLayout(10, 10));
-        headerPanel.setOpaque(false); // arka plan şeffaf
+        headerPanel.setOpaque(false);
 
-        // Profil resmi yuvarlak ve mouse hover border efekti
-        BufferedImage defaultImg = loadImage("src/assets/pic1.png"); // farklı profil resmi
+        BufferedImage defaultImg = loadImage("src/assets/pic1.png");
         Image circleImage = defaultImg != null ? makeRoundedCorner(defaultImg, 70) : null;
         profilePicLabel = new JLabel(circleImage != null ? new ImageIcon(circleImage) : new JLabel("Foto yok").getIcon());
         profilePicLabel.setToolTipText("Profil fotoğrafını değiştir");
@@ -116,17 +111,38 @@ public class UserPanel extends JFrame {
         welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
         welcomeLabel.setForeground(new Color(0, 120, 215));
 
-        // Çıkış butonu modern stil ile
-        JButton exitButton = new JButton("✖");
-        exitButton.setBackground(new Color(245, 245, 245));
-        exitButton.setForeground(new Color(150, 0, 0));
-        exitButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        exitButton.setFocusPainted(false);
-        exitButton.setPreferredSize(new Dimension(20, 20));
-        exitButton.setToolTipText("Çıkış yap");
-        exitButton.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
-        exitButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        // Şifre değiştir butonu (çarpının solunda)
+        JButton changePassBtn = new JButton("🔑");
+        changePassBtn.setBackground(Color.WHITE);
+        changePassBtn.setForeground(new Color(180, 0, 0));
+        changePassBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        changePassBtn.setFocusPainted(false);
+        changePassBtn.setBorder(BorderFactory.createLineBorder(new Color(180, 0, 0), 2));
+        changePassBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        changePassBtn.setPreferredSize(new Dimension(30, 25));
+        changePassBtn.setToolTipText("Şifre değiştir");
+        changePassBtn.addActionListener(e -> openChangePasswordDialog());
 
+        JButton exitButton = new JButton("✖");
+        Color redExit = new Color(180, 0, 0);
+        exitButton.setBackground(Color.WHITE);
+        exitButton.setForeground(redExit);
+        exitButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        exitButton.setFocusPainted(false);
+        exitButton.setBorder(BorderFactory.createLineBorder(redExit, 2));
+        exitButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        exitButton.setPreferredSize(new Dimension(30, 20));
+        exitButton.setToolTipText("Çıkış yap");
+        exitButton.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) {
+                exitButton.setBackground(redExit);
+                exitButton.setForeground(Color.WHITE);
+            }
+            @Override public void mouseExited(MouseEvent e) {
+                exitButton.setBackground(Color.WHITE);
+                exitButton.setForeground(redExit);
+            }
+        });
         exitButton.addActionListener(e -> {
             int onay = JOptionPane.showConfirmDialog(this, "Uygulamadan çıkmak istiyor musunuz?", "Çıkış", JOptionPane.YES_NO_OPTION);
             if (onay == JOptionPane.YES_OPTION) {
@@ -142,12 +158,97 @@ public class UserPanel extends JFrame {
 
         headerPanel.add(leftPanel, BorderLayout.WEST);
         headerPanel.add(welcomeLabel, BorderLayout.CENTER);
-        headerPanel.add(exitButton, BorderLayout.EAST);
+
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
+        rightPanel.setOpaque(false);
+        rightPanel.add(changePassBtn);
+        rightPanel.add(exitButton);
+        headerPanel.add(rightPanel, BorderLayout.EAST);
 
         getContentPane().add(headerPanel, BorderLayout.NORTH);
     }
 
-    // Profil seçim penceresi (aynı, küçük grid ile)
+   private void openChangePasswordDialog() {
+    JPasswordField oldPass = new JPasswordField(12);
+    JPasswordField newPass = new JPasswordField(12);
+    JPasswordField confirmPass = new JPasswordField(12);
+
+    // Göz butonları
+    JButton toggleOld = new JButton("👁");
+    toggleOld.setPreferredSize(new Dimension(40, 25));
+    toggleOld.addActionListener(e -> {
+        oldPass.setEchoChar(oldPass.getEchoChar() != '\0' ? '\0' : '•');
+    });
+
+    JButton toggleNew = new JButton("👁");
+    toggleNew.setPreferredSize(new Dimension(40, 25));
+    toggleNew.addActionListener(e -> {
+        newPass.setEchoChar(newPass.getEchoChar() != '\0' ? '\0' : '•');
+    });
+
+    JButton toggleConfirm = new JButton("👁");
+    toggleConfirm.setPreferredSize(new Dimension(40, 25));
+    toggleConfirm.addActionListener(e -> {
+        confirmPass.setEchoChar(confirmPass.getEchoChar() != '\0' ? '\0' : '•');
+    });
+
+    // Panel ile düzenleme
+    JPanel panel = new JPanel(new GridBagLayout());
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(5, 5, 5, 5);
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+
+    gbc.gridx = 0; gbc.gridy = 0;
+    panel.add(new JLabel("Eski Şifre:"), gbc);
+    gbc.gridx = 1;
+    panel.add(oldPass, gbc);
+    gbc.gridx = 2;
+    panel.add(toggleOld, gbc);
+
+    gbc.gridx = 0; gbc.gridy = 1;
+    panel.add(new JLabel("Yeni Şifre:"), gbc);
+    gbc.gridx = 1;
+    panel.add(newPass, gbc);
+    gbc.gridx = 2;
+    panel.add(toggleNew, gbc);
+
+    gbc.gridx = 0; gbc.gridy = 2;
+    panel.add(new JLabel("Yeni Şifre (Tekrar):"), gbc);
+    gbc.gridx = 1;
+    panel.add(confirmPass, gbc);
+    gbc.gridx = 2;
+    panel.add(toggleConfirm, gbc);
+
+    int option = JOptionPane.showConfirmDialog(this, panel, "Şifre Değiştir", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+    if (option == JOptionPane.OK_OPTION) {
+        String oldP = new String(oldPass.getPassword());
+        String newP = new String(newPass.getPassword());
+        String confirmP = new String(confirmPass.getPassword());
+
+        if (!UserService.checkPassword(userId, oldP)) {
+            JOptionPane.showMessageDialog(this, "Eski şifre yanlış!");
+            return;
+        }
+
+        if (oldP.equals(newP)) {
+            JOptionPane.showMessageDialog(this, "Yeni şifre eski şifreyle aynı olamaz!");
+            return;
+        }
+
+        if (!newP.equals(confirmP)) {
+            JOptionPane.showMessageDialog(this, "Yeni şifreler eşleşmiyor!");
+            return;
+        }
+
+        boolean updated = UserService.updatePassword(userId, newP);
+        if (updated) {
+            JOptionPane.showMessageDialog(this, "✅ Şifreniz başarıyla değiştirildi!");
+        } else {
+            JOptionPane.showMessageDialog(this, "❌ Şifre değiştirilemedi!");
+        }
+    }
+}
+
     private void openProfileSelection() {
         String[] profileImages = {"pic1.png", "pic2.png", "pic3.png", "pic4.png", "pic5.png", "pic6.png", "pic7.png",
                 "pic8.png", "pic9.png", "pic10.png", "pic11.png", "pic12.png", "pic13.png", "pic14.png", "pic15.png"};
@@ -179,6 +280,7 @@ public class UserPanel extends JFrame {
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
+
 
     private void buildCenterPanel() {
         JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
@@ -265,15 +367,11 @@ public class UserPanel extends JFrame {
         amountField = new JTextField(8);
         unitCombo = new JComboBox<>();
         populateUnitsByType();
+JButton donateButton = new JButton("Bağış Yap");
+donateButton.setPreferredSize(new Dimension(110, 35));
+styleButton(donateButton, new Color(0, 120, 215));
+donateButton.addActionListener(e -> handleDonate());
 
-        JButton donateButton = new JButton("Bağış Yap");
-        donateButton.setPreferredSize(new Dimension(110, 35));
-        donateButton.setBackground(new Color(0, 120, 215));
-        donateButton.setForeground(Color.BLACK);
-        donateButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        donateButton.setFocusPainted(false);
-        donateButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        donateButton.addActionListener(e -> handleDonate());
 
         donatePanel.add(new JLabel("Bağış Türü:"));
         donatePanel.add(typeCombo);

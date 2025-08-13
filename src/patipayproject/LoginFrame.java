@@ -6,18 +6,19 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-
+import java.awt.Cursor;
 
 public class LoginFrame extends JFrame {
     private JTextField usernameField;
     private JPasswordField passwordField;
     private JButton loginButton;
     private JButton registerButton;
+    private JButton forgotButton;
 
     public LoginFrame() {
         setTitle("PatiPay Application");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(350, 400);
+        setSize(350, 450);
         setLocationRelativeTo(null);
 
         // İç sınıf: Arka plan paneli
@@ -117,11 +118,19 @@ public class LoginFrame extends JFrame {
         registerButton.setPreferredSize(buttonSize);
         formPanel.add(registerButton, gbc);
 
+        // Şifremi Unuttum Butonu
+        gbc.gridy = 4;
+        forgotButton = new JButton("Şifremi Unuttum");
+        styleButton(forgotButton, new Color(200, 80, 80));
+        forgotButton.setPreferredSize(buttonSize);
+        formPanel.add(forgotButton, gbc);
+
         mainPanel.add(formPanel, BorderLayout.CENTER);
 
         // Buton olayları
         loginButton.addActionListener(e -> handleLogin());
         registerButton.addActionListener(e -> handleRegister());
+        forgotButton.addActionListener(e -> handleForgotPassword());
 
         setVisible(true);
     }
@@ -173,7 +182,7 @@ public class LoginFrame extends JFrame {
         JOptionPane.showMessageDialog(this, "✅ Giriş başarılı!");
 
         if (role.equals("admin")) {
-            new AdminPanel().setVisible(true);
+            new AdminPanel(username).setVisible(true);
         } else {
             int userId = UserService.getUserId(username);
             new UserPanel(userId).setVisible(true);
@@ -181,52 +190,85 @@ public class LoginFrame extends JFrame {
 
         dispose();
     }
+private void handleRegister() {
+    String username = usernameField.getText().trim();
+    String password = new String(passwordField.getPassword());
 
-    private void handleRegister() {
-        String username = usernameField.getText().trim();
-        String password = new String(passwordField.getPassword());
-
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Lütfen kullanıcı adı ve şifre girin.");
-            return;
-        }
-
-        // ❗ Şifre sadece rakam olmalı
-        if (!password.matches("\\d+")) {
-            JOptionPane.showMessageDialog(this, "❌ Şifre sadece rakamlardan oluşmalıdır.");
-            temizle();
-            return;
-        }
-
-        // Rol seçimi
-        String[] roles = {"user", "admin"};
-        String role = (String) JOptionPane.showInputDialog(
-                this,
-                "Kullanıcı rolünü seçin:",
-                "Rol Seçimi",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                roles,
-                roles[0]
-        );
-
-        if (role == null) return;
-
-        boolean success = UserService.register(username, password, role);
-
-        if (success) {
-            JOptionPane.showMessageDialog(this, "✅ Kayıt başarılı!");
-            if (role.equals("admin")) {
-                new AdminPanel().setVisible(true);
-            } else {
-                int userId = UserService.getUserId(username);
-                new UserPanel(userId).setVisible(true);
-            }
-            dispose();
-        } else {
-            JOptionPane.showMessageDialog(this, "❌ Bu kullanıcı adı zaten var.");
-        }
-
-        temizle();
+    if (username.isEmpty() || password.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Lütfen kullanıcı adı ve şifre girin.");
+        return;
     }
+
+    // Şifre sadece rakam olmalı
+    if (!password.matches("\\d+")) {
+        JOptionPane.showMessageDialog(this, "❌ Şifre sadece rakamlardan oluşmalıdır.");
+        temizle();
+        return;
+    }
+
+    // Kullanıcıdan e-posta iste ve format kontrolü yap
+    String email = JOptionPane.showInputDialog(this, "E-posta adresinizi girin:");
+    if (email == null || email.isEmpty() || !isValidEmail(email)) {
+        JOptionPane.showMessageDialog(this, "❌ Geçersiz e-posta formatı!");
+        return;
+    }
+
+    // Rol seçimi
+    String[] roles = {"user", "admin"};
+    String role = (String) JOptionPane.showInputDialog(
+            this,
+            "Kullanıcı rolünü seçin:",
+            "Rol Seçimi",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            roles,
+            roles[0]
+    );
+
+    if (role == null) return;
+
+    boolean success = UserService.register(username, password, role, email);
+
+    if (success) {
+        JOptionPane.showMessageDialog(this, "✅ Kayıt başarılı!");
+        if (role.equals("admin")) {
+            new AdminPanel(username).setVisible(true);
+        } else {
+            int userId = UserService.getUserId(username);
+            new UserPanel(userId).setVisible(true);
+        }
+        dispose();
+    } else {
+        JOptionPane.showMessageDialog(this, "❌ Bu kullanıcı adı veya e-posta zaten var.");
+    }
+
+    temizle();
+}
+
+    private void handleForgotPassword() {
+        String username = JOptionPane.showInputDialog(this, "Kullanıcı adınızı girin:");
+        if (username == null || username.isEmpty()) return;
+
+        String email = UserService.getUserEmail(username);
+        if (email == null) {
+            JOptionPane.showMessageDialog(this, "❌ Bu kullanıcı bulunamadı.");
+            return;
+        }
+
+        // 4 haneli sayısal yeni şifre oluştur
+        String newPassword = String.valueOf((int)(Math.random() * 9000 + 1000));
+
+        if (UserService.resetPassword(username, newPassword)) {
+            MailService.sendMail(email, "PatiPay Yeni Şifreniz",
+                    "Merhaba " + username + ",\n\nYeni şifreniz: " + newPassword + "\n\nLütfen giriş yaptıktan sonra değiştirin.");
+            JOptionPane.showMessageDialog(this, "✅ Yeni şifre e-postanıza gönderildi.");
+        } else {
+            JOptionPane.showMessageDialog(this, "❌ Şifre güncellenemedi.");
+        }
+    }
+    private boolean isValidEmail(String email) {
+    String emailRegex = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$";
+    return email.matches(emailRegex);
+}
+   
 }

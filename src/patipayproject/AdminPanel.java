@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.util.*;
 import java.util.List;
+import javax.swing.border.TitledBorder;
 
 public class AdminPanel extends JFrame {
 
@@ -22,38 +23,63 @@ public class AdminPanel extends JFrame {
     private JTable table;
     private DefaultTableModel model;
 
-    public AdminPanel() {
-        setTitle("🐾 PatiPay - Yönetici Paneli 🐾");
-        setSize(1050, 650);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout(10, 10));
-        setLocationRelativeTo(null);
+  public AdminPanel(String username) {
+    setTitle("🐾 PatiPay - Yönetici Paneli 🐾");
+    setSize(1050, 650);
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setLayout(new BorderLayout(10, 10));
+    setLocationRelativeTo(null);
 
-        // Üst panel: Hoşgeldin yazısı ve sağ üstte çıkış butonu
-        JPanel topPanel = new JPanel(new BorderLayout());
-        
-        JLabel welcomeLabel = new JLabel("Hoş geldin Admin 👋", SwingConstants.CENTER);
-        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        welcomeLabel.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
-        welcomeLabel.setForeground(new Color(0, 120, 215));
+    // Üst panel: dinamik hoşgeldin yazısı ve çıkış butonu
+    JPanel topPanel = new JPanel(new BorderLayout());
 
-        topPanel.add(welcomeLabel, BorderLayout.CENTER);
-        topPanel.add(buildExitButtonPanel(), BorderLayout.EAST);
-        add(topPanel, BorderLayout.NORTH);
+    String welcomeText = "Hoş geldin " + username + " 👋";
+    JLabel welcomeLabel = new JLabel(welcomeText, SwingConstants.CENTER);
+    welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+    welcomeLabel.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
+    welcomeLabel.setForeground(new Color(0, 120, 215));
 
-        // Orta bölüm: filtre çubuğu + tablo
-        JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
-        centerPanel.add(buildFilterBar(), BorderLayout.NORTH);
-        centerPanel.add(buildTable(), BorderLayout.CENTER);
-        add(centerPanel, BorderLayout.CENTER);
+    topPanel.add(welcomeLabel, BorderLayout.CENTER);
+    topPanel.add(buildExitButtonPanel(), BorderLayout.EAST);
+    add(topPanel, BorderLayout.NORTH);
 
-        // Alt bölüm: buton çubuğu
-        add(buildButtonsBar(), BorderLayout.SOUTH);
+    // ... kalan kod aynı
 
-        applyFilters("date DESC");
 
-        setVisible(true);
-    }
+
+    // Orta bölüm: filtre paneli ve tablo
+    JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
+
+    // Filtre paneli oluşturup içine filtre barı koyduk
+    // filtrePanel oluşturulması
+    JPanel filtrePanel = new JPanel(new BorderLayout());
+
+    Color filterBorderColor = new Color(0, 120, 215);
+    filtrePanel.setBorder(BorderFactory.createTitledBorder(
+    BorderFactory.createLineBorder(filterBorderColor, 1),
+    "Filtrele",
+    TitledBorder.LEFT,
+    TitledBorder.TOP,
+    filtrePanel.getFont().deriveFont(Font.BOLD, 14f),
+    filterBorderColor
+));
+
+filtrePanel.add(buildFilterBar(), BorderLayout.CENTER);
+
+
+    centerPanel.add(filtrePanel, BorderLayout.NORTH);
+    centerPanel.add(buildTable(), BorderLayout.CENTER);
+
+    add(centerPanel, BorderLayout.CENTER);
+
+    // Alt bölüm: buton çubuğu
+    add(buildButtonsBar(), BorderLayout.SOUTH);
+
+    applyFilters("date DESC");
+
+    setVisible(true);
+}
+
 
     private JPanel buildFilterBar() {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -105,15 +131,22 @@ public class AdminPanel extends JFrame {
         return p;
     }
 
-    private JScrollPane buildTable() {
-        String[] columns = {"ID", "Kullanıcı Adı", "Tür", "Tarih", "Miktar", "Birim"};
-        model = new DefaultTableModel(columns, 0) {
-            @Override public boolean isCellEditable(int row, int col) { return false; }
-        };
-        table = new JTable(model);
-        table.setAutoCreateRowSorter(true);
-        return new JScrollPane(table);
-    }
+   private JScrollPane buildTable() {
+    String[] columns = {"ID", "Kullanıcı Adı", "Tür", "Tarih", "Miktar", "Birim"};
+    model = new DefaultTableModel(columns, 0) {
+        @Override public boolean isCellEditable(int row, int col) { return false; }
+    };
+    table = new JTable(model);
+    table.setAutoCreateRowSorter(true);
+
+    // Sütun başlıklarının arka plan rengini ayarla
+    table.getTableHeader().setBackground(new Color(0, 120, 215));
+    table.getTableHeader().setForeground(Color.WHITE);
+    table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+    return new JScrollPane(table);
+}
+
 
     private JPanel buildButtonsBar() {
         JPanel bar = new JPanel();
