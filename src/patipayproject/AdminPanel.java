@@ -1,7 +1,6 @@
 
 package patipayproject;
 
-
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
@@ -19,67 +18,198 @@ public class AdminPanel extends JFrame {
     private JComboBox<String> typeCombo;
     private JSpinner startDateSpinner;
     private JSpinner endDateSpinner;
-
     private JTable table;
     private DefaultTableModel model;
 
-  public AdminPanel(String username) {
-    setTitle("🐾 PatiPay - Yönetici Paneli 🐾");
-    setSize(1050, 650);
-    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    setLayout(new BorderLayout(10, 10));
-    setLocationRelativeTo(null);
+    public AdminPanel(String username) {
+        setTitle("🐾 PatiPay - Yönetici Paneli 🐾");
+        setSize(1050, 650);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
+        setLocationRelativeTo(null);
 
-    // Üst panel: dinamik hoşgeldin yazısı ve çıkış butonu
-    JPanel topPanel = new JPanel(new BorderLayout());
+        JPanel topPanel = new JPanel(new BorderLayout());
 
-    String welcomeText = "Hoş geldin " + username + " 👋";
-    JLabel welcomeLabel = new JLabel(welcomeText, SwingConstants.CENTER);
-    welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
-    welcomeLabel.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
-    welcomeLabel.setForeground(new Color(0, 120, 215));
+        String welcomeText = "Hoş geldin " + username + " 👋";
+        JLabel welcomeLabel = new JLabel(welcomeText, SwingConstants.CENTER);
+        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        welcomeLabel.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
+        welcomeLabel.setForeground(new Color(0, 120, 215));
 
-    topPanel.add(welcomeLabel, BorderLayout.CENTER);
-    topPanel.add(buildExitButtonPanel(), BorderLayout.EAST);
-    add(topPanel, BorderLayout.NORTH);
+        topPanel.add(welcomeLabel, BorderLayout.CENTER);
+        topPanel.add(buildTopRightButtons(username), BorderLayout.EAST);
+        add(topPanel, BorderLayout.NORTH);
 
-    // ... kalan kod aynı
+        JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
 
+        JPanel filtrePanel = new JPanel(new BorderLayout());
+        Color filterBorderColor = new Color(0, 120, 215);
+        filtrePanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(filterBorderColor, 1),
+                "Filtrele",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                filtrePanel.getFont().deriveFont(Font.BOLD, 14f),
+                filterBorderColor
+        ));
+        filtrePanel.add(buildFilterBar(), BorderLayout.CENTER);
 
+        centerPanel.add(filtrePanel, BorderLayout.NORTH);
+        centerPanel.add(buildTable(), BorderLayout.CENTER);
 
-    // Orta bölüm: filtre paneli ve tablo
-    JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
+        add(centerPanel, BorderLayout.CENTER);
 
-    // Filtre paneli oluşturup içine filtre barı koyduk
-    // filtrePanel oluşturulması
-    JPanel filtrePanel = new JPanel(new BorderLayout());
+        add(buildButtonsBar(), BorderLayout.SOUTH);
 
-    Color filterBorderColor = new Color(0, 120, 215);
-    filtrePanel.setBorder(BorderFactory.createTitledBorder(
-    BorderFactory.createLineBorder(filterBorderColor, 1),
-    "Filtrele",
-    TitledBorder.LEFT,
-    TitledBorder.TOP,
-    filtrePanel.getFont().deriveFont(Font.BOLD, 14f),
-    filterBorderColor
-));
+        applyFilters("date DESC");
+        setVisible(true);
+    }
 
-filtrePanel.add(buildFilterBar(), BorderLayout.CENTER);
+    private JPanel buildTopRightButtons(String username) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 8));
 
+        JButton changePassBtn = new JButton("🔑");
+        Color red = new Color(180, 0, 0);
+        changePassBtn.setBackground(Color.WHITE);
+        changePassBtn.setForeground(red);
+        changePassBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        changePassBtn.setFocusPainted(false);
+        changePassBtn.setBorder(BorderFactory.createLineBorder(red, 2));
+        changePassBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        changePassBtn.setPreferredSize(new Dimension(40, 28));
 
-    centerPanel.add(filtrePanel, BorderLayout.NORTH);
-    centerPanel.add(buildTable(), BorderLayout.CENTER);
+        changePassBtn.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) {
+                changePassBtn.setBackground(red);
+                changePassBtn.setForeground(Color.WHITE);
+            }
+            @Override public void mouseExited(MouseEvent e) {
+                changePassBtn.setBackground(Color.WHITE);
+                changePassBtn.setForeground(red);
+            }
+        });
 
-    add(centerPanel, BorderLayout.CENTER);
+        changePassBtn.addActionListener(e -> showChangePasswordDialog(username));
 
-    // Alt bölüm: buton çubuğu
-    add(buildButtonsBar(), BorderLayout.SOUTH);
+        JButton exitBtn = new JButton("✖");
+        Color redExit = new Color(180, 0, 0);
+        exitBtn.setBackground(Color.WHITE);
+        exitBtn.setForeground(redExit);
+        exitBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        exitBtn.setFocusPainted(false);
+        exitBtn.setBorder(BorderFactory.createLineBorder(redExit, 2));
+        exitBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        exitBtn.setPreferredSize(new Dimension(45, 30));
 
-    applyFilters("date DESC");
+        exitBtn.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) {
+                exitBtn.setBackground(redExit);
+                exitBtn.setForeground(Color.WHITE);
+            }
+            @Override public void mouseExited(MouseEvent e) {
+                exitBtn.setBackground(Color.WHITE);
+                exitBtn.setForeground(redExit);
+            }
+        });
 
-    setVisible(true);
-}
+        exitBtn.addActionListener(e -> {
+            int onay = JOptionPane.showConfirmDialog(this, "Uygulamadan çıkmak istiyor musunuz?", "Çıkış", JOptionPane.YES_NO_OPTION);
+            if (onay == JOptionPane.YES_OPTION) {
+                dispose();
+                System.exit(0);
+            }
+        });
 
+        panel.add(changePassBtn);
+        panel.add(exitBtn);
+        return panel;
+    }
+
+   private void showChangePasswordDialog(String username) {
+    JPanel panel = new JPanel(new GridLayout(3, 1, 5, 5));
+
+    JPasswordField oldPass = new JPasswordField();
+    JPasswordField newPass = new JPasswordField();
+    JPasswordField confirmPass = new JPasswordField();
+
+    JButton showOldBtn = new JButton("👁");
+    JButton showNewBtn = new JButton("👁");
+    JButton showConfirmBtn = new JButton("👁");
+
+    Dimension eyeSize = new Dimension(30, 25);
+    showOldBtn.setPreferredSize(eyeSize);
+    showNewBtn.setPreferredSize(eyeSize);
+    showConfirmBtn.setPreferredSize(eyeSize);
+
+    ActionListener toggleVisibility = e -> {
+        JButton btn = (JButton) e.getSource();
+        JPasswordField target;
+        if (btn == showOldBtn) target = oldPass;
+        else if (btn == showNewBtn) target = newPass;
+        else target = confirmPass;
+
+        if (target.getEchoChar() == '\u2022') {
+            target.setEchoChar((char) 0);
+        } else {
+            target.setEchoChar('\u2022');
+        }
+    };
+
+    showOldBtn.addActionListener(toggleVisibility);
+    showNewBtn.addActionListener(toggleVisibility);
+    showConfirmBtn.addActionListener(toggleVisibility);
+
+    JPanel oldPassPanel = new JPanel(new BorderLayout());
+    oldPassPanel.add(oldPass, BorderLayout.CENTER);
+    oldPassPanel.add(showOldBtn, BorderLayout.EAST);
+
+    JPanel newPassPanel = new JPanel(new BorderLayout());
+    newPassPanel.add(newPass, BorderLayout.CENTER);
+    newPassPanel.add(showNewBtn, BorderLayout.EAST);
+
+    JPanel confirmPassPanel = new JPanel(new BorderLayout());
+    confirmPassPanel.add(confirmPass, BorderLayout.CENTER);
+    confirmPassPanel.add(showConfirmBtn, BorderLayout.EAST);
+
+    panel.add(new JLabel("Eski Şifre:"));
+    panel.add(oldPassPanel);
+    panel.add(new JLabel("Yeni Şifre:"));
+    panel.add(newPassPanel);
+    panel.add(new JLabel("Yeni Şifre(Tekrar):"));
+    panel.add(confirmPassPanel);
+
+    int result = JOptionPane.showConfirmDialog(this, panel, "Şifre Değiştir", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+    if (result == JOptionPane.OK_OPTION) {
+        String oldP = new String(oldPass.getPassword());
+        String newP = new String(newPass.getPassword());
+        String confirmP = new String(confirmPass.getPassword());
+
+        if (oldP.isEmpty() || newP.isEmpty() || confirmP.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Lütfen tüm alanları doldurun.");
+            return;
+        }
+        if (!newP.equals(confirmP)) {
+            JOptionPane.showMessageDialog(this, "Yeni şifreler eşleşmiyor.");
+            return;
+        }
+        if (!AdminService.checkPasswordByUsername(username, oldP)) {
+            JOptionPane.showMessageDialog(this, "Eski şifre yanlış.");
+            return;
+        }
+         if (oldP.equals(newP)) {
+            JOptionPane.showMessageDialog(this, "Yeni şifre eski şifreyle aynı olamaz!");
+            return;
+        }
+
+        boolean updated = AdminService.updatePasswordByUsername(username, oldP, newP);
+        if (updated) {
+            JOptionPane.showMessageDialog(this, "Şifre başarıyla değiştirildi.");
+        } else {
+            JOptionPane.showMessageDialog(this, "Şifre güncellenirken hata oluştu.");
+        }
+    }
+   }
 
     private JPanel buildFilterBar() {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -131,27 +261,25 @@ filtrePanel.add(buildFilterBar(), BorderLayout.CENTER);
         return p;
     }
 
-   private JScrollPane buildTable() {
-    String[] columns = {"ID", "Kullanıcı Adı", "Tür", "Tarih", "Miktar", "Birim"};
-    model = new DefaultTableModel(columns, 0) {
-        @Override public boolean isCellEditable(int row, int col) { return false; }
-    };
-    table = new JTable(model);
-    table.setAutoCreateRowSorter(true);
+    private JScrollPane buildTable() {
+        String[] columns = {"ID", "Kullanıcı Adı", "Tür", "Tarih", "Miktar", "Birim"};
+        model = new DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
+        table = new JTable(model);
+        table.setAutoCreateRowSorter(true);
 
-    // Sütun başlıklarının arka plan rengini ayarla
-    table.getTableHeader().setBackground(new Color(0, 120, 215));
-    table.getTableHeader().setForeground(Color.WHITE);
-    table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        table.getTableHeader().setBackground(new Color(0, 120, 215));
+        table.getTableHeader().setForeground(Color.WHITE);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-    return new JScrollPane(table);
-}
-
+        return new JScrollPane(table);
+    }
 
     private JPanel buildButtonsBar() {
         JPanel bar = new JPanel();
         bar.setLayout(new BoxLayout(bar, BoxLayout.X_AXIS));
-        bar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // kenar boşluğu
+        bar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         Color defaultBtnColor = new Color(0, 120, 215);
 
@@ -171,7 +299,6 @@ filtrePanel.add(buildFilterBar(), BorderLayout.CENTER);
         styleButton(exportBtn, defaultBtnColor);
         styleButton(topDonorsBtn, defaultBtnColor);
 
-        // ActionListener ekle
         sortDateAscBtn.addActionListener(e -> applyFilters("d.date ASC, d.id ASC"));
         sortDateDescBtn.addActionListener(e -> applyFilters("d.date DESC, d.id DESC"));
         sortTypeBtn.addActionListener(e -> applyFilters("type ASC, date DESC"));
@@ -225,7 +352,6 @@ filtrePanel.add(buildFilterBar(), BorderLayout.CENTER);
             JOptionPane.showMessageDialog(this, "En Çok Bağış Yapan 3 Kişi:\n" + message);
         });
 
-        // Butonları sırayla ekle, aralarına istediğin kadar boşluk bırakabilirsin (burada 32px)
         JButton[] buttons = {
             sortDateAscBtn,
             sortDateDescBtn,
@@ -244,44 +370,6 @@ filtrePanel.add(buildFilterBar(), BorderLayout.CENTER);
         }
 
         return bar;
-    }
-
-    private JPanel buildExitButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 8));
-
-        JButton exitBtn = new JButton("✖");
-        Color redExit = new Color(180, 0, 0);
-
-        exitBtn.setBackground(Color.WHITE);
-        exitBtn.setForeground(redExit);
-        exitBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        exitBtn.setFocusPainted(false);
-        exitBtn.setBorder(BorderFactory.createLineBorder(redExit, 2));
-        exitBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        exitBtn.setPreferredSize(new Dimension(45, 30));
-
-        exitBtn.addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) {
-                exitBtn.setBackground(redExit);
-                exitBtn.setForeground(Color.WHITE);
-            }
-            @Override public void mouseExited(MouseEvent e) {
-                exitBtn.setBackground(Color.WHITE);
-                exitBtn.setForeground(redExit);
-            }
-        });
-
-        exitBtn.addActionListener(e -> {
-            int onay = JOptionPane.showConfirmDialog(this, "Uygulamadan çıkmak istiyor musunuz?", "Çıkış", JOptionPane.YES_NO_OPTION);
-            if (onay == JOptionPane.YES_OPTION) {
-                dispose();
-                System.exit(0);
-            }
-        });
-
-        panel.add(exitBtn);
-
-        return panel;
     }
 
     private void applyFilters(String orderByOrNull) {

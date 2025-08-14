@@ -7,16 +7,17 @@
             <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/AdminService.java</file>
             <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/DBconnection.java</file>
             <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/mamaDonation.java</file>
-            <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/suDonation.java</file>
             <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/UserPanel.java</file>
+            <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/suDonation.java</file>
             <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/AdminPanel.java</file>
             <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/Donation.java</file>
             <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/UserService.java</file>
             <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/DonationFactory.java</file>
             <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/LoginFrame.java</file>
             <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/PatiPayProject.java</file>
-            <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/paraDonation.java</file>
             <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/donationDAO.java</file>
+            <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/paraDonation.java</file>
+            <file>file:/Users/user/NetBeansProjects/PatiPayProject/src/patipayproject/MailService.java</file>
         </group>
     </open-files>
 </project-private>

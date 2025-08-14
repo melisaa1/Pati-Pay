@@ -1,18 +1,16 @@
 
 package patipayproject;
 
-public class suDonation implements DonationType{
+public class suDonation implements DonationType {
 
     @Override
     public String getTypeName() {
         return "su";
     }
-    
 
     @Override
-    public String getDefaultUnit() { 
+    public String getDefaultUnit() {
         return "adet";
-    
     }
-    }
+}
 

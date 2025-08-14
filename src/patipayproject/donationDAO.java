@@ -1,22 +1,10 @@
 
 package patipayproject;
 
-
 import java.sql.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.LocalDate;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
-
-
 
 public class donationDAO {
 
@@ -88,13 +76,7 @@ public class donationDAO {
         return donations;
     }
 
-    public List<Donation> getDonationsWithFilters(
-            String usernameFilter,
-            String typeFilter,
-            LocalDate startDate,
-            LocalDate endDate,
-            String orderBy 
-    ) {
+    public List<Donation> getDonationsWithFilters(String usernameFilter, String typeFilter, LocalDate startDate, LocalDate endDate, String orderBy) {
         List<Donation> donations = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
                 "SELECT d.id, d.user_id, u.username, d.type, d.date, d.amount, d.unit " +
@@ -160,7 +142,6 @@ public class donationDAO {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             ResultSet rs = pstmt.executeQuery();
-
             if (rs.next()) {
                 int userId = rs.getInt("user_id");
                 int total = rs.getInt("total");
@@ -178,7 +159,6 @@ public class donationDAO {
         final double suPuan = 0.6;
 
         double totalScore = 0;
-
         String query = "SELECT type, amount FROM Donation WHERE user_id = ?";
 
         try (Connection conn = DBconnection.connect();
@@ -210,10 +190,7 @@ public class donationDAO {
         final double suPuan = 0.6;
 
         Map<String, Double> scoreMap = new HashMap<>();
-
-        String query = "SELECT u.username, d.type, d.amount " +
-                       "FROM Donation d " +
-                       "JOIN User u ON d.user_id = u.id";
+        String query = "SELECT u.username, d.type, d.amount FROM Donation d JOIN User u ON d.user_id = u.id";
 
         try (Connection conn = DBconnection.connect();
              PreparedStatement stmt = conn.prepareStatement(query);
@@ -244,15 +221,10 @@ public class donationDAO {
                 .collect(Collectors.toList());
     }
 
-    public Map<String, Object> getSummaryWithFilters(
-            String usernameOrNull,
-            String typeOrNull,
-            LocalDate startOrNull,
-            LocalDate endOrNull
-    ) {
+    public Map<String, Object> getSummaryWithFilters(String usernameOrNull, String typeOrNull, LocalDate startOrNull, LocalDate endOrNull) {
         StringBuilder sb = new StringBuilder(
                 "SELECT COUNT(*) AS cnt, COALESCE(SUM(d.amount),0) AS total " +
-                "FROM Donation d JOIN User u ON d.user_id = u.id WHERE 1=1"
+                        "FROM Donation d JOIN User u ON d.user_id = u.id WHERE 1=1"
         );
         List<Object> params = new ArrayList<>();
 
@@ -297,14 +269,10 @@ public class donationDAO {
         return empty;
     }
 
-    public List<Map<String, Object>> getTypeBreakdown(
-            String usernameOrNull,
-            LocalDate startOrNull,
-            LocalDate endOrNull
-    ) {
+    public List<Map<String, Object>> getTypeBreakdown(String usernameOrNull, LocalDate startOrNull, LocalDate endOrNull) {
         StringBuilder sb = new StringBuilder(
                 "SELECT d.type, COUNT(*) AS cnt, COALESCE(SUM(d.amount),0) AS total " +
-                "FROM Donation d JOIN User u ON d.user_id = u.id WHERE 1=1"
+                        "FROM Donation d JOIN User u ON d.user_id = u.id WHERE 1=1"
         );
         List<Object> params = new ArrayList<>();
 
@@ -344,54 +312,53 @@ public class donationDAO {
         }
         return rows;
     }
-    
+
     public List<Donation> getDonationsWithFiltersByUserId(int userId, String typeFilter, LocalDate startDate, LocalDate endDate) {
-    List<Donation> donations = new ArrayList<>();
-    String sql = "SELECT id, user_id, type, date, amount, unit FROM Donation WHERE user_id = ?";
-
-    if (typeFilter != null && !typeFilter.isBlank()) {
-        sql += " AND type = ?";
-    }
-    if (startDate != null) {
-        sql += " AND date >= ?";
-    }
-    if (endDate != null) {
-        sql += " AND date <= ?";
-    }
-    sql += " ORDER BY date DESC, id ASC";
-
-    try (Connection conn = DBconnection.connect();
-         PreparedStatement ps = conn.prepareStatement(sql)) {
-
-        int idx = 1;
-        ps.setInt(idx++, userId);
+        List<Donation> donations = new ArrayList<>();
+        String sql = "SELECT id, user_id, type, date, amount, unit FROM Donation WHERE user_id = ?";
 
         if (typeFilter != null && !typeFilter.isBlank()) {
-            ps.setString(idx++, typeFilter);
+            sql += " AND type = ?";
         }
         if (startDate != null) {
-            ps.setString(idx++, startDate.toString());
+            sql += " AND date >= ?";
         }
         if (endDate != null) {
-            ps.setString(idx++, endDate.toString());
+            sql += " AND date <= ?";
+        }
+        sql += " ORDER BY date DESC, id ASC";
+
+        try (Connection conn = DBconnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            int idx = 1;
+            ps.setInt(idx++, userId);
+
+            if (typeFilter != null && !typeFilter.isBlank()) {
+                ps.setString(idx++, typeFilter);
+            }
+            if (startDate != null) {
+                ps.setString(idx++, startDate.toString());
+            }
+            if (endDate != null) {
+                ps.setString(idx++, endDate.toString());
+            }
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                donations.add(new Donation(
+                        rs.getInt("id"),
+                        rs.getInt("user_id"),
+                        DonationFactory.createType(rs.getString("type")),
+                        LocalDate.parse(rs.getString("date")),
+                        rs.getDouble("amount"),
+                        rs.getString("unit")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
-        ResultSet rs = ps.executeQuery();
-        while (rs.next()) {
-            donations.add(new Donation(
-                rs.getInt("id"),
-                rs.getInt("user_id"),
-                DonationFactory.createType(rs.getString("type")),
-                LocalDate.parse(rs.getString("date")),
-                rs.getDouble("amount"),
-                rs.getString("unit")
-            ));
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
+        return donations;
     }
-
-    return donations;
-}
-
 }

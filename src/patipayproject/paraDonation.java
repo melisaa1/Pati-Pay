@@ -5,13 +5,12 @@ public class paraDonation implements DonationType {
 
     @Override
     public String getTypeName() {
-       return "para";
+        return "para";
     }
-    
+
     @Override
-    public String getDefaultUnit() { 
+    public String getDefaultUnit() {
         return "TRY";
-    
     }
-    
 }
+

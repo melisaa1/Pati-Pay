@@ -10,7 +10,6 @@ public class UserService {
 
     private static donationDAO donationDao = new donationDAO();
 
-    // Giriş yap
     public static String login(String username, String password) {
         String sql = "SELECT role FROM User WHERE username = ? AND password = ?";
         try (Connection conn = DBconnection.connect();
@@ -30,7 +29,6 @@ public class UserService {
         return null;
     }
 
-    // Kayıt ol
     public static boolean register(String username, String password, String role, String email) {
         String sqlCheck = "SELECT id FROM User WHERE username = ?";
         String sqlInsert = "INSERT INTO User(username, password, role, email) VALUES (?, ?, ?, ?)";
@@ -62,7 +60,6 @@ public class UserService {
         }
     }
 
-    // Bağış yap
     public static boolean makeDonation(int userId, String type, LocalDate date, double amount, String unit) {
         String sql = "INSERT INTO Donation(user_id, type, date, amount, unit) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DBconnection.connect();
@@ -82,7 +79,6 @@ public class UserService {
         }
     }
 
-    // Kullanıcının tüm bağışlarını getir
     public static List<Donation> getDonationsByUserId(int userId) {
         List<Donation> donations = new ArrayList<>();
         String sql = "SELECT * FROM Donation WHERE user_id = ? ORDER BY date DESC";
@@ -111,7 +107,6 @@ public class UserService {
         return donations;
     }
 
-    // Kullanıcının toplam puanını hesapla
     public static double getTotalScoreByUserId(int userId) {
         double totalScore = 0;
         String sql = "SELECT type, amount FROM Donation WHERE user_id = ?";
@@ -140,7 +135,6 @@ public class UserService {
         return totalScore;
     }
 
-    // Kullanıcı adını ID'ye göre getir
     public static String getUsernameById(int userId) {
         String sql = "SELECT username FROM User WHERE id = ?";
         try (Connection conn = DBconnection.connect();
@@ -158,7 +152,6 @@ public class UserService {
         return "Kullanıcı";
     }
 
-    // Kullanıcı ID'sini username ile getir
     public static int getUserId(String username) {
         String sql = "SELECT id FROM User WHERE username = ?";
         try (Connection conn = DBconnection.connect();
@@ -176,31 +169,27 @@ public class UserService {
         return -1;
     }
 
-    // Filtrelenmiş bağışları getir
     public static List<Donation> getFilteredDonations(int userId, String typeFilter, LocalDate startDate, LocalDate endDate) {
         String type = (typeFilter != null && !typeFilter.equalsIgnoreCase("Tümü")) ? typeFilter : null;
         return donationDao.getDonationsWithFiltersByUserId(userId, type, startDate, endDate);
     }
 
-    // Kullanıcı emailini username ile getir
     public static String getUserEmail(String username) {
-    String email = null;
-    String sql = "SELECT email FROM User WHERE LOWER(username) = LOWER(?)";
-    try (Connection conn = DBconnection.connect();
-         PreparedStatement ps = conn.prepareStatement(sql)) {
-        ps.setString(1, username.trim());
-        ResultSet rs = ps.executeQuery();
-        if (rs.next()) {
-            email = rs.getString("email");
+        String email = null;
+        String sql = "SELECT email FROM User WHERE LOWER(username) = LOWER(?)";
+        try (Connection conn = DBconnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, username.trim());
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                email = rs.getString("email");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-    } catch (SQLException e) {
-        e.printStackTrace();
+        return email;
     }
-    return email;
-}
 
-
-    // Şifre sıfırlama
     public static boolean resetPassword(String username, String newPassword) {
         String sql = "UPDATE User SET password = ? WHERE username = ?";
         try (Connection conn = DBconnection.connect();
@@ -213,14 +202,15 @@ public class UserService {
             return false;
         }
     }
-     public static boolean checkPassword(int userId, String password) {
+
+    public static boolean checkPassword(int userId, String password) {
         try (Connection conn = DBconnection.connect();
              PreparedStatement ps = conn.prepareStatement("SELECT password FROM User WHERE id = ?")) {
             ps.setInt(1, userId);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 String dbPass = rs.getString("password");
-                return dbPass.equals(password); // basit string karşılaştırma, hash kullanabilirsin
+                return dbPass.equals(password);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -228,7 +218,6 @@ public class UserService {
         return false;
     }
 
-    // Kullanıcının şifresini günceller
     public static boolean updatePassword(int userId, String newPassword) {
         try (Connection conn = DBconnection.connect();
              PreparedStatement ps = conn.prepareStatement("UPDATE User SET password = ? WHERE id = ?")) {

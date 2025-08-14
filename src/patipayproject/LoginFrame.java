@@ -1,12 +1,8 @@
-
 package patipayproject;
-
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-
-import java.awt.Cursor;
 
 public class LoginFrame extends JFrame {
     private JTextField usernameField;
@@ -21,7 +17,6 @@ public class LoginFrame extends JFrame {
         setSize(350, 450);
         setLocationRelativeTo(null);
 
-        // İç sınıf: Arka plan paneli
         class BackgroundPanel extends JPanel {
             private Image backgroundImage;
             public BackgroundPanel(String imagePath) {
@@ -40,7 +35,6 @@ public class LoginFrame extends JFrame {
         mainPanel.setLayout(new BorderLayout());
         setContentPane(mainPanel);
 
-        // Üst başlık paneli
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(new Color(255, 255, 255, 180));
         headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -60,21 +54,18 @@ public class LoginFrame extends JFrame {
         headerPanel.add(titleLabel, BorderLayout.CENTER);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // Form paneli
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(new Color(255, 255, 255, 180));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Kullanıcı Adı
         gbc.gridx = 0; gbc.gridy = 0;
         formPanel.add(new JLabel("👤 Kullanıcı Adı:"), gbc);
         gbc.gridx = 1;
         usernameField = new JTextField(15);
         formPanel.add(usernameField, gbc);
 
-        // Şifre + göz ikonu
         gbc.gridx = 0; gbc.gridy = 1;
         formPanel.add(new JLabel("🔒 Şifre:"), gbc);
         gbc.gridx = 1;
@@ -99,10 +90,8 @@ public class LoginFrame extends JFrame {
         passwordLayer.add(eyeLabel, Integer.valueOf(2));
         formPanel.add(passwordLayer, gbc);
 
-        // Buton boyutu
         Dimension buttonSize = new Dimension(200, 40);
 
-        // Giriş Butonu
         gbc.gridx = 0; gbc.gridy = 2;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
@@ -111,14 +100,12 @@ public class LoginFrame extends JFrame {
         loginButton.setPreferredSize(buttonSize);
         formPanel.add(loginButton, gbc);
 
-        // Kayıt Ol Butonu
         gbc.gridy = 3;
         registerButton = new JButton("Kayıt Ol");
         styleButton(registerButton, new Color(0, 120, 215));
         registerButton.setPreferredSize(buttonSize);
         formPanel.add(registerButton, gbc);
 
-        // Şifremi Unuttum Butonu
         gbc.gridy = 4;
         forgotButton = new JButton("Şifremi Unuttum");
         styleButton(forgotButton, new Color(200, 80, 80));
@@ -127,7 +114,6 @@ public class LoginFrame extends JFrame {
 
         mainPanel.add(formPanel, BorderLayout.CENTER);
 
-        // Buton olayları
         loginButton.addActionListener(e -> handleLogin());
         registerButton.addActionListener(e -> handleRegister());
         forgotButton.addActionListener(e -> handleForgotPassword());
@@ -190,60 +176,58 @@ public class LoginFrame extends JFrame {
 
         dispose();
     }
-private void handleRegister() {
-    String username = usernameField.getText().trim();
-    String password = new String(passwordField.getPassword());
 
-    if (username.isEmpty() || password.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Lütfen kullanıcı adı ve şifre girin.");
-        return;
-    }
+    private void handleRegister() {
+        String username = usernameField.getText().trim();
+        String password = new String(passwordField.getPassword());
 
-    // Şifre sadece rakam olmalı
-    if (!password.matches("\\d+")) {
-        JOptionPane.showMessageDialog(this, "❌ Şifre sadece rakamlardan oluşmalıdır.");
-        temizle();
-        return;
-    }
-
-    // Kullanıcıdan e-posta iste ve format kontrolü yap
-    String email = JOptionPane.showInputDialog(this, "E-posta adresinizi girin:");
-    if (email == null || email.isEmpty() || !isValidEmail(email)) {
-        JOptionPane.showMessageDialog(this, "❌ Geçersiz e-posta formatı!");
-        return;
-    }
-
-    // Rol seçimi
-    String[] roles = {"user", "admin"};
-    String role = (String) JOptionPane.showInputDialog(
-            this,
-            "Kullanıcı rolünü seçin:",
-            "Rol Seçimi",
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            roles,
-            roles[0]
-    );
-
-    if (role == null) return;
-
-    boolean success = UserService.register(username, password, role, email);
-
-    if (success) {
-        JOptionPane.showMessageDialog(this, "✅ Kayıt başarılı!");
-        if (role.equals("admin")) {
-            new AdminPanel(username).setVisible(true);
-        } else {
-            int userId = UserService.getUserId(username);
-            new UserPanel(userId).setVisible(true);
+        if (username.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Lütfen kullanıcı adı ve şifre girin.");
+            return;
         }
-        dispose();
-    } else {
-        JOptionPane.showMessageDialog(this, "❌ Bu kullanıcı adı veya e-posta zaten var.");
-    }
 
-    temizle();
-}
+        if (!password.matches("\\d+")) {
+            JOptionPane.showMessageDialog(this, "❌ Şifre sadece rakamlardan oluşmalıdır.");
+            temizle();
+            return;
+        }
+
+        String email = JOptionPane.showInputDialog(this, "E-posta adresinizi girin:");
+        if (email == null || email.isEmpty() || !isValidEmail(email)) {
+            JOptionPane.showMessageDialog(this, "❌ Geçersiz e-posta formatı!");
+            return;
+        }
+
+        String[] roles = {"user", "admin"};
+        String role = (String) JOptionPane.showInputDialog(
+                this,
+                "Kullanıcı rolünü seçin:",
+                "Rol Seçimi",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                roles,
+                roles[0]
+        );
+
+        if (role == null) return;
+
+        boolean success = UserService.register(username, password, role, email);
+
+        if (success) {
+            JOptionPane.showMessageDialog(this, "✅ Kayıt başarılı!");
+            if (role.equals("admin")) {
+                new AdminPanel(username).setVisible(true);
+            } else {
+                int userId = UserService.getUserId(username);
+                new UserPanel(userId).setVisible(true);
+            }
+            dispose();
+        } else {
+            JOptionPane.showMessageDialog(this, "❌ Bu kullanıcı adı veya e-posta zaten var.");
+        }
+
+        temizle();
+    }
 
     private void handleForgotPassword() {
         String username = JOptionPane.showInputDialog(this, "Kullanıcı adınızı girin:");
@@ -255,7 +239,6 @@ private void handleRegister() {
             return;
         }
 
-        // 4 haneli sayısal yeni şifre oluştur
         String newPassword = String.valueOf((int)(Math.random() * 9000 + 1000));
 
         if (UserService.resetPassword(username, newPassword)) {
@@ -266,9 +249,10 @@ private void handleRegister() {
             JOptionPane.showMessageDialog(this, "❌ Şifre güncellenemedi.");
         }
     }
+
     private boolean isValidEmail(String email) {
-    String emailRegex = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$";
-    return email.matches(emailRegex);
+        String emailRegex = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$";
+        return email.matches(emailRegex);
+    }
 }
-   
-}
+
